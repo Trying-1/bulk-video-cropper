@@ -1,0 +1,25 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Temporary videos - users can only access their own videos
+    match /temp-videos/{userId}/{fileName} {
+      // Allow read/write access only to the owner
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      
+      // Auto-delete after 24 hours (this is enforced by Cloud Functions)
+    }
+    
+    // Processed videos - users can only access their own videos
+    match /temp-processed/{userId}/{fileName} {
+      // Allow read/write access only to the owner
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      
+      // Auto-delete after 24 hours (this is enforced by Cloud Functions)
+    }
+    
+    // Default deny all other access
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

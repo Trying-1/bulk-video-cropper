@@ -1,5 +1,5 @@
 import React from 'react';
-import { QualityPreset, qualityPresets } from '@/utils/ffmpeg';
+import { QualityPreset, qualityPresets } from '@/utils/qualityPresets';
 
 interface QualityPresetSelectorProps {
   selectedPreset: QualityPreset;
@@ -32,7 +32,7 @@ const QualityPresetSelector: React.FC<QualityPresetSelectorProps> = ({
             <div className="flex flex-col items-center">
               <span className="font-medium capitalize">{preset}</span>
               <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                {preset === 'fastest' && (
+                {preset === QualityPreset.Fastest && (
                   <span className="flex items-center">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -40,7 +40,7 @@ const QualityPresetSelector: React.FC<QualityPresetSelectorProps> = ({
                     Speed
                   </span>
                 )}
-                {preset === 'balanced' && (
+                {preset === QualityPreset.Balanced && (
                   <span className="flex items-center">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1 text-teal-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -48,10 +48,10 @@ const QualityPresetSelector: React.FC<QualityPresetSelectorProps> = ({
                     Balanced
                   </span>
                 )}
-                {preset === 'quality' && (
+                {preset === QualityPreset.Quality && (
                   <span className="flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
                     Quality
                   </span>
@@ -61,9 +61,6 @@ const QualityPresetSelector: React.FC<QualityPresetSelectorProps> = ({
           </button>
         ))}
       </div>
-      <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-        {qualityPresets[selectedPreset].description}
-      </p>
     </div>
   );
 };

@@ -3,16 +3,11 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useState, useEffect } from "react";
-import dynamic from 'next/dynamic';
-
-// Dynamically import the ParticleBackground to prevent SSR issues
-const ParticleBackground = dynamic(
-  () => import('./components/ParticleBackground'),
-  { ssr: false }
-);
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function Home() {
   const [isLoaded, setIsLoaded] = useState(false);
+  const { user, loading } = useAuth();
   
   useEffect(() => {
     setIsLoaded(true);
@@ -20,8 +15,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-orange-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 overflow-hidden relative">
-      {/* Three.js Particle Background */}
-      <ParticleBackground />
       {/* Navigation */}
       <nav className="container mx-auto px-4 py-6 flex justify-between items-center">
         <div className="flex items-center space-x-2">
@@ -37,12 +30,25 @@ export default function Home() {
           <a href="#how-it-works" className="text-gray-600 hover:text-teal-600 dark:text-gray-300 dark:hover:text-teal-400 transition-colors">How It Works</a>
           <a href="#testimonials" className="text-gray-600 hover:text-teal-600 dark:text-gray-300 dark:hover:text-teal-400 transition-colors">Testimonials</a>
         </div>
-        <Link 
-          href="/editor" 
-          className="hidden md:block px-5 py-2 bg-gradient-to-r from-orange-400 to-orange-600 text-white rounded-lg font-medium hover:from-orange-500 hover:to-orange-700 transition-all shadow-md"
-        >
-          Get Started
-        </Link>
+        {!loading && (
+          user ? (
+            <Link 
+              href="/editor" 
+              className="hidden md:block px-5 py-2 bg-gradient-to-r from-orange-400 to-orange-600 text-white rounded-lg font-medium hover:from-orange-500 hover:to-orange-700 transition-all shadow-md"
+            >
+              Start Cropping Now
+            </Link>
+          ) : (
+            <div className="space-x-4">
+              <Link href="/auth/signin" className="inline-block px-6 py-3 bg-gradient-to-r from-orange-400 to-orange-600 text-white rounded-lg font-medium hover:from-orange-500 hover:to-orange-700 transition-all shadow-md">
+                Sign In
+              </Link>
+              <Link href="/auth/signup" className="inline-block px-6 py-3 bg-gradient-to-r from-teal-500 to-teal-700 text-white rounded-lg font-medium hover:from-teal-600 hover:to-teal-800 transition-all shadow-md">
+                Sign Up
+              </Link>
+            </div>
+          )
+        )}
       </nav>
       {/* Hero Section */}
       <header className="container mx-auto px-4 py-16 md:py-24 flex flex-col md:flex-row items-center justify-between">
@@ -327,14 +333,14 @@ export default function Home() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
           {/* Step 1 */}
           <div className="relative">
-            <div className="bg-white dark:bg-gray-700 rounded-xl p-8 shadow-lg relative z-10 h-full border border-gray-100 dark:border-gray-600">
+            <div className="bg-white dark:bg-gray-700 rounded-xl p-8 shadow-lg relative h-full border border-gray-100 dark:border-gray-600">
               <div className="w-12 h-12 bg-gradient-to-br from-teal-500 to-teal-700 text-white rounded-full flex items-center justify-center font-bold text-xl mb-6 shadow-md">1</div>
               <h3 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">Upload Your Videos</h3>
               <p className="text-gray-600 dark:text-gray-300">
                 Select and upload multiple videos from your device. Our tool accepts all common video formats.
               </p>
             </div>
-            <div className="hidden md:block absolute top-1/2 -right-12 transform -translate-y-1/2 z-0">
+            <div className="hidden md:block absolute top-1/2 -right-12 transform -translate-y-1/2 z-10">
               <svg className="w-24 h-8 text-teal-500" fill="none" viewBox="0 0 24 8" stroke="currentColor">
                 <path d="M23.354 4.354a.5.5 0 0 0 0-.708L20.172.464a.5.5 0 0 0-.708.708L22.293 4l-2.829 2.828a.5.5 0 1 0 .708.708l3.182-3.182zM0 4.5h23v-1H0v1z" fill="currentColor"/>
               </svg>
@@ -343,14 +349,14 @@ export default function Home() {
           
           {/* Step 2 */}
           <div className="relative">
-            <div className="bg-white dark:bg-gray-700 rounded-xl p-8 shadow-lg relative z-10 h-full border border-gray-100 dark:border-gray-600">
+            <div className="bg-white dark:bg-gray-700 rounded-xl p-8 shadow-lg relative h-full border border-gray-100 dark:border-gray-600">
               <div className="w-12 h-12 bg-gradient-to-br from-orange-400 to-orange-600 text-white rounded-full flex items-center justify-center font-bold text-xl mb-6 shadow-md">2</div>
               <h3 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">Set Crop Dimensions</h3>
               <p className="text-gray-600 dark:text-gray-300">
                 Use our intuitive drag-and-crop interface to select the exact portion of your videos you want to keep.
               </p>
             </div>
-            <div className="hidden md:block absolute top-1/2 -right-12 transform -translate-y-1/2 z-0">
+            <div className="hidden md:block absolute top-1/2 -right-12 transform -translate-y-1/2 z-10">
               <svg className="w-24 h-8 text-orange-500" fill="none" viewBox="0 0 24 8" stroke="currentColor">
                 <path d="M23.354 4.354a.5.5 0 0 0 0-.708L20.172.464a.5.5 0 0 0-.708.708L22.293 4l-2.829 2.828a.5.5 0 1 0 .708.708l3.182-3.182zM0 4.5h23v-1H0v1z" fill="currentColor"/>
               </svg>
@@ -359,7 +365,7 @@ export default function Home() {
           
           {/* Step 3 */}
           <div>
-            <div className="bg-white dark:bg-gray-700 rounded-xl p-8 shadow-lg relative z-10 h-full border border-gray-100 dark:border-gray-600">
+            <div className="bg-white dark:bg-gray-700 rounded-xl p-8 shadow-lg relative h-full border border-gray-100 dark:border-gray-600">
               <div className="w-12 h-12 bg-gradient-to-br from-teal-500 to-teal-700 text-white rounded-full flex items-center justify-center font-bold text-xl mb-6 shadow-md">3</div>
               <h3 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">Process & Download</h3>
               <p className="text-gray-600 dark:text-gray-300">

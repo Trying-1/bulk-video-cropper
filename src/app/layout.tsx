@@ -33,6 +33,9 @@ export const metadata: Metadata = {
   },
 }
 
+import Navbar from '@/components/Navbar';
+import { Providers } from './providers';
+
 export default function RootLayout({
   children,
 }: {
@@ -40,7 +43,14 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={inter.className}>{children}</body>
+      <body className={inter.className}>
+        <Providers>
+          <Navbar />
+          <main className="min-h-screen bg-gray-50 dark:bg-gray-900 pt-16">
+            {children}
+          </main>
+        </Providers>
+      </body>
     </html>
   )
 }

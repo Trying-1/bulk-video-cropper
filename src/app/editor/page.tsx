@@ -1,39 +1,42 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import ProtectedRoute from "@/components/ProtectedRoute";
+import { useAuth } from "@/contexts/AuthContext";
 import Link from "next/link";
-import { processBatchVideos, cancelProcessing } from "@/utils/ffmpeg";
+import { processBatchVideos, cancelProcessing, loadFFmpeg } from "@/utils/ffmpeg";
+import { MAX_VIDEO_COUNT } from '@/config/env';
 import ProcessingStatus from "@/components/ProcessingStatus";
 import VideoPreviewModal from "@/components/VideoPreviewModal";
 
-import dynamic from 'next/dynamic';
 import { validateVideo, sanitizeFilename } from "@/utils/fileValidation";
 import { logError, formatErrorMessage } from "@/utils/errorHandling";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import ErrorNotification from "@/components/ErrorNotification";
 
-// Dynamically import the ParticleBackground to prevent SSR issues
-const EditorParticleBackground = dynamic(
-  () => import('./ParticleBackground'),
-  { ssr: false }
-);
-
 export default function EditorPage() {
-  const [videos, setVideos] = useState<Array<{
+  interface Video {
     id: string;
     name: string;
     file: File;
     url: string;
     processed: boolean;
-    processedUrl?: string;
-    error?: string;
+    duration?: number;
     cropSettings: {
       x: number;
       y: number;
       width: number;
       height: number;
     };
-  }>>([]);
+    processedUrl?: string;
+    error?: string;
+  }
+
+  interface ValidatedVideo extends Video {
+    error?: string;
+  }
+
+  const [videos, setVideos] = useState<Video[]>([]);
   
   const [currentVideoId, setCurrentVideoId] = useState<string | null>(null);
   const [aspectRatio, setAspectRatio] = useState<string>("16:9");
@@ -50,8 +53,8 @@ export default function EditorPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [useCurrentCropForAll, setUseCurrentCropForAll] = useState(false);
   
-  // Performance optimization
-  const isLowPerformance = useMediaQuery('(max-width: 768px)') || useMediaQuery('(prefers-reduced-motion: reduce)');
+  // Mobile detection for responsive UI adjustments
+  const isMobile = useMediaQuery('(max-width: 768px)');
   
   const currentVideo = videos.find(v => v.id === currentVideoId) || null;
   
@@ -66,14 +69,14 @@ export default function EditorPage() {
       
       try {
         const files = Array.from(event.target.files);
-        const validatedVideos = [];
+        const validatedVideos: ValidatedVideo[] = [];
         
-        // Check if adding these files would exceed the 10 video limit
+        // Check if adding these files would exceed the configured video limit
         const currentCount = videos.length;
-        const remainingSlots = 10 - currentCount;
+        const remainingSlots = MAX_VIDEO_COUNT - currentCount;
         
         if (remainingSlots <= 0) {
-          setErrorMessage('Maximum limit of 10 videos reached. Please remove some videos before adding more.');
+          setErrorMessage(`Maximum limit of ${MAX_VIDEO_COUNT} videos reached. Please remove some videos before adding more.`);
           return;
         }
         
@@ -81,14 +84,13 @@ export default function EditorPage() {
         const filesToProcess = files.slice(0, remainingSlots);
         
         if (files.length > remainingSlots) {
-          setErrorMessage(`Only processing ${remainingSlots} of ${files.length} videos due to the 10 video limit.`);
+          setErrorMessage(`Only processing ${remainingSlots} of ${files.length} videos due to the ${MAX_VIDEO_COUNT} video limit.`);
         }
         
         for (const file of filesToProcess) {
           const validation = await validateVideo(file);
           
-          if (validation.valid) {
-            validatedVideos.push({
+          const video: ValidatedVideo = {
               id: Math.random().toString(36).substring(2, 9),
               name: sanitizeFilename(file.name),
               file: file,
@@ -98,27 +100,14 @@ export default function EditorPage() {
               cropSettings: {
                 x: 0,
                 y: 0,
-                width: 0,  // Start with zero width/height to indicate not cropped yet
-                height: 0
-              }
-            });
-          } else {
-            validatedVideos.push({
-              id: Math.random().toString(36).substring(2, 9),
-              name: file.name,
-              file: file,
-              url: URL.createObjectURL(file),
-              processed: false,
-              error: validation.errors.join(', '),
-              duration: validation.duration,
-              cropSettings: {
-                x: 0,
-                y: 0,
                 width: 0,
                 height: 0
               }
-            });
-          }
+            };
+            if (!validation.valid) {
+              video.error = validation.errors.join(', ');
+            }
+            validatedVideos.push(video);
         }
         
         setVideos(prev => [...prev, ...validatedVideos]);
@@ -518,6 +507,16 @@ export default function EditorPage() {
     setProcessingProgress(0);
     setErrorMessage(null);
     setCompletionMessage('');
+
+    try {
+      // Initialize FFmpeg if not already initialized
+      await loadFFmpeg();
+    } catch (error) {
+      console.error('Failed to initialize FFmpeg:', error);
+      setIsProcessing(false);
+      setErrorMessage('Failed to initialize video processing. Please try again.');
+      return;
+    }
     
     try {
       // Get container dimensions for accurate crop calculation
@@ -526,6 +525,9 @@ export default function EditorPage() {
         height: videoContainerRef.current.clientHeight
       } : { width: 640, height: 360 };
       
+      // Initialize the processing array
+      let videosToProcessWithSettings: Array<{ id: string; file: File; cropSettings: { x: number; y: number; width: number; height: number }; containerDimensions: { width: number; height: number } }> = [];
+
       // Get all unprocessed videos
       const unprocessedVideos = videos.filter(video => !video.processed);
       
@@ -553,8 +555,7 @@ export default function EditorPage() {
             containerDimensions
           }));
           
-          // Update videosToProcessWithSettings with these videos
-          var videosToProcessWithSettings = videosToProcess;
+          videosToProcessWithSettings = videosToProcess;
         }
       } else {
         // Only process videos that have valid crop settings
@@ -564,7 +565,7 @@ export default function EditorPage() {
         });
         
         // Map videos to the format expected by processBatchVideos
-        var videosToProcessWithSettings = videosWithCropSettings.map(video => ({
+        videosToProcessWithSettings = videosWithCropSettings.map(video => ({
           id: video.id,
           file: video.file,
           cropSettings: video.cropSettings,
@@ -626,7 +627,7 @@ export default function EditorPage() {
         );
       } catch (error) {
         // If processing was cancelled, we still want to keep any completed videos
-        if (error.message === 'Processing cancelled') {
+        if (error instanceof Error && error.message === 'Processing cancelled') {
           // Just note that processing was cancelled
           processingError = 'Processing was cancelled by user.';
         } else {
@@ -748,8 +749,6 @@ export default function EditorPage() {
   
   return (
     <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-orange-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 relative">
-      {/* Three.js Particle Background */}
-      {!isLowPerformance && <EditorParticleBackground quality="low" />}
       <ProcessingStatus 
         isProcessing={isProcessing} 
         progress={processingProgress} 
@@ -776,16 +775,16 @@ export default function EditorPage() {
       />
       {/* Header */}
       <header className="bg-gradient-to-r from-teal-600 to-teal-700 dark:from-teal-900 dark:to-teal-800 shadow-md">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
+        <div className="max-w-7xl mx-auto px-2 sm:px-4 md:px-6 lg:px-8">
+          <div className="flex justify-between h-14 sm:h-16">
             <div className="flex items-center">
               <Link href="/" className="flex items-center">
-                <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center mr-2 shadow-sm">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div className="w-7 h-7 sm:w-8 sm:h-8 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center mr-2 shadow-sm">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:h-5 sm:w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 4v16M17 4v16M3 8h18M3 16h18" />
                   </svg>
                 </div>
-                <span className="font-bold text-white">Video Cropper</span>
+                <span className="text-sm sm:text-base font-bold text-white">Video Cropper</span>
               </Link>
             </div>
           </div>
@@ -793,7 +792,7 @@ export default function EditorPage() {
       </header>
       
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-2 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
         <div className="bg-white/90 dark:bg-gray-800/90 shadow-lg rounded-lg overflow-hidden backdrop-blur-sm border border-teal-100 dark:border-teal-900">
           <div className="p-4 border-b border-teal-200 dark:border-teal-800 bg-gradient-to-r from-teal-50 to-teal-100 dark:from-teal-900/30 dark:to-teal-800/30">
             <h2 className="text-lg font-medium text-teal-800 dark:text-teal-200">Video Editor</h2>
@@ -802,10 +801,10 @@ export default function EditorPage() {
             </p>
           </div>
           
-          <div className="p-4">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="p-2 sm:p-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
               {/* Video Preview */}
-              <div className="lg:col-span-2 space-y-6">
+              <div className="md:col-span-1 lg:col-span-2 space-y-4 md:space-y-6">
                 <div className="aspect-video bg-black rounded-lg overflow-hidden relative">
                   {/* Video Navigation Controls */}
                   {videos.length > 1 && currentVideo && (
@@ -897,7 +896,7 @@ export default function EditorPage() {
                 
                 {/* Crop Controls */}
                 {currentVideo && (
-                  <div className="bg-gradient-to-br from-teal-50 to-teal-100 dark:from-teal-900/40 dark:to-teal-800/40 rounded-lg p-4 shadow-sm">
+                  <div className="bg-gradient-to-br from-teal-50 to-teal-100 dark:from-teal-900/40 dark:to-teal-800/40 rounded-lg p-3 sm:p-4 shadow-sm">
                     <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-4">Crop Settings</h3>
                     
                     <div className="mb-4">
@@ -937,7 +936,7 @@ export default function EditorPage() {
                       )}
                       
                       {cropMode && (
-                        <div className="mb-3 flex space-x-2 items-center">
+                        <div className="mb-3 flex flex-wrap gap-2 items-center">
                           <div className="text-white text-xs font-medium bg-gradient-to-r from-teal-600 to-teal-700 px-2 py-1 rounded shadow-sm">
                             Click and drag to set crop area
                           </div>
@@ -948,7 +947,7 @@ export default function EditorPage() {
                       )}
                       
                       {cropMode ? (
-                        <div className="flex space-x-2">
+                        <div className="flex flex-wrap gap-2">
                           <button
                             onClick={() => {
                               setCropMode(false);
@@ -1071,7 +1070,7 @@ export default function EditorPage() {
                     
                     <div className="mb-4">
                       <h4 className="text-sm font-medium text-teal-700 dark:text-teal-300 mb-2 border-b border-teal-200 dark:border-teal-800 pb-1">Dimensions & Position</h4>
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4 mb-4">
                         <div>
                           <label className="flex items-center justify-between text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                             <span>Width</span>
@@ -1159,7 +1158,7 @@ export default function EditorPage() {
                       <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
                         Aspect Ratio Presets
                       </label>
-                      <div className="grid grid-cols-3 gap-2">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                         {[
                           { name: "16:9", width: 16, height: 9 },
                           { name: "9:16", width: 9, height: 16 },
@@ -1187,11 +1186,11 @@ export default function EditorPage() {
               </div>
               
               {/* Sidebar */}
-              <div className="space-y-6">
+              <div className="space-y-4 md:space-y-6">
                 {/* Upload Section */}
-                <div className="bg-gradient-to-br from-teal-50 to-teal-100 dark:from-teal-900/40 dark:to-teal-800/40 rounded-lg p-4 shadow-sm">
+                <div className="bg-gradient-to-br from-teal-50 to-teal-100 dark:from-teal-900/40 dark:to-teal-800/40 rounded-lg p-3 sm:p-4 shadow-sm">
                   <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-4">Upload Videos</h3>
-                  <label className="flex flex-col items-center justify-center w-full h-48 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:hover:bg-bray-800 dark:bg-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:hover:border-gray-500 dark:hover:bg-gray-600 transition-colors duration-200">
+                  <label className="flex flex-col items-center justify-center w-full h-32 sm:h-48 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:hover:bg-bray-800 dark:bg-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:hover:border-gray-500 dark:hover:bg-gray-600 transition-colors duration-200">
                     <input 
                       type="file" 
                       onChange={handleFileChange} 
@@ -1230,10 +1229,10 @@ export default function EditorPage() {
                 </div>
                 
                 {/* Source Video List */}
-                <div className="bg-gradient-to-br from-teal-50 to-teal-100 dark:from-teal-900/40 dark:to-teal-800/40 rounded-lg p-4 shadow-sm">
+                <div className="bg-gradient-to-br from-teal-50 to-teal-100 dark:from-teal-900/40 dark:to-teal-800/40 rounded-lg p-3 sm:p-4 shadow-sm">
                   <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-4">Source Videos ({videos.length})</h3>
                   {videos.length > 0 ? (
-                    <div className="space-y-2 max-h-60 overflow-y-auto">
+                    <div className="space-y-2 max-h-48 sm:max-h-60 overflow-y-auto">
                       {videos.map(video => (
                         <div 
                           key={video.id} 
@@ -1246,7 +1245,7 @@ export default function EditorPage() {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                               </svg>
                             </div>
-                            <div className="truncate max-w-[120px]">
+                            <div className="truncate max-w-[100px] sm:max-w-[120px]">
                               <p className="text-xs font-medium text-gray-900 dark:text-white truncate">{video.name}</p>
                               <p className="text-xs text-gray-500 dark:text-gray-400">
                                 {video.error ? (
@@ -1316,7 +1315,7 @@ export default function EditorPage() {
                   </div>
                   
                   {videos.filter(v => v.processed).length > 0 ? (
-                    <div className="space-y-2 max-h-60 overflow-y-auto">
+                    <div className="space-y-2 max-h-48 sm:max-h-60 overflow-y-auto">
                       {videos.filter(v => v.processed).map(video => (
                         <div 
                           key={`processed-${video.id}`} 
@@ -1329,11 +1328,11 @@ export default function EditorPage() {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                               </svg>
                             </div>
-                            <div className="truncate max-w-[120px]">
+                            <div className="truncate max-w-[100px] sm:max-w-[120px]">
                               <p className="text-xs font-medium text-gray-900 dark:text-white truncate">cropped-{video.name}</p>
                             </div>
                           </div>
-                          <div className="flex space-x-2">
+                          <div className="flex flex-wrap gap-2">
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -1381,15 +1380,14 @@ export default function EditorPage() {
                 </div>
                 
                 {/* Process Section */}
-                <div className="bg-gradient-to-br from-teal-50 to-teal-100 dark:from-teal-900/40 dark:to-teal-800/40 rounded-lg p-4 shadow-sm">
+                <div className="bg-gradient-to-br from-teal-50 to-teal-100 dark:from-teal-900/40 dark:to-teal-800/40 rounded-lg p-3 sm:p-4 shadow-sm">
                   <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-4">Process Video</h3>
                   
 
-                  
-                  <button
+                                    <button
                     onClick={handleProcessVideo}
                     disabled={isProcessing || videos.length === 0}
-                    className="w-full inline-flex justify-center items-center px-4 py-3 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-105 duration-200 mt-4"
+                    className="w-full inline-flex justify-center items-center px-3 py-2 sm:px-4 sm:py-3 border border-transparent rounded-md shadow-sm text-sm sm:text-base font-medium text-white bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-105 duration-200 mt-4"
                   >
                     {isProcessing ? (
                       <>
@@ -1406,7 +1404,7 @@ export default function EditorPage() {
                 </div>
                 
                 {/* Instructions */}
-                <div className="bg-gradient-to-br from-teal-50 to-teal-100 dark:from-teal-900/40 dark:to-teal-800/40 rounded-lg p-4 shadow-sm">
+                <div className="bg-gradient-to-br from-teal-50 to-teal-100 dark:from-teal-900/40 dark:to-teal-800/40 rounded-lg p-3 sm:p-4 shadow-sm">
                   <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-2">How to Use</h3>
                   <ol className="list-decimal list-inside text-sm text-gray-600 dark:text-gray-300 space-y-2">
                     <li>Upload multiple videos using the upload section</li>
