@@ -33,6 +33,12 @@ The Bulk Video Cropper is a web-based application built using Next.js and React,
 - File validation
 - Processing queue management
 
+#### Subscription Limits (`/src/utils/subscriptionLimits.ts`)
+- Defines limits for each subscription tier (free, premium, pro)
+- Video count limits 
+- Video duration limits
+- File size limits
+
 ### 2. UI Components
 
 #### VideoPreviewModal
@@ -84,8 +90,24 @@ The Bulk Video Cropper is a web-based application built using Next.js and React,
 ## State Management
 
 - **Local State**: React useState for component-level state
-- **Global State**: Context API for authentication and configuration
+- **Global State**: Context API for authentication and subscription data
 - **Session Storage**: For preserving state between page reloads
+- **Firestore**: For user data, subscription status, and usage tracking
+
+## Authentication & User Management
+
+#### AuthContext
+- User authentication state
+- Login/Logout management 
+- Session persistence
+- Subscription data management
+- Limit enforcement based on subscription tier
+
+#### User Dashboard
+- Account management
+- Usage statistics
+- Subscription management
+- Plan-based limits display
 
 ## Security Considerations
 
@@ -124,14 +146,16 @@ The Bulk Video Cropper is a web-based application built using Next.js and React,
 ## Future Considerations
 
 1. **Scalability**
-   - Support for more video formats
-   - Increased processing capacity
-   - Better error handling
+   - Server-side processing for larger videos
+   - Cloud infrastructure for processing
+   - Multi-worker management
 
 2. **Features**
-   - Advanced video editing options
-   - Multiple crop presets
-   - Video effects
+   - Additional video editing capabilities
+   - Preset management
+   - Advanced export options
+   - Custom subscription tiers
+   - Usage analytics
 
 3. **Architecture**
    - Modular component design

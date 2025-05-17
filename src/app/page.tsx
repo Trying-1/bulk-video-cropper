@@ -4,553 +4,552 @@ import Link from "next/link";
 import Image from "next/image";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import Navbar from '@/components/Navbar';
+import { getUserSessionCookie, updateAppStateCookie, getAppStateCookie } from '@/utils/cookies';
 
 export default function Home() {
   const [isLoaded, setIsLoaded] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const { user, loading } = useAuth();
   
   useEffect(() => {
+    // Check cookies first for faster initial render
+    const sessionCookie = getUserSessionCookie();
+    if (sessionCookie) {
+      setIsAuthenticated(true);
+    }
+    
+    // Track that user visited landing page
+    updateAppStateCookie({
+      lastVisitedPage: '/'
+    });
+    
     setIsLoaded(true);
   }, []);
+  
+  // Update from actual auth state once it's loaded
+  useEffect(() => {
+    if (!loading) {
+      setIsAuthenticated(!!user);
+    }
+  }, [user, loading]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-orange-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 overflow-hidden relative">
-      {/* Navigation */}
-      <nav className="container mx-auto px-4 py-6 flex justify-between items-center">
-        <div className="flex items-center space-x-2">
-          <div className="w-10 h-10 bg-gradient-to-br from-teal-500 to-teal-700 rounded-lg flex items-center justify-center shadow-md">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 4v16M17 4v16M3 8h18M3 16h18" />
-            </svg>
-          </div>
-          <span className="font-bold text-xl text-gray-900 dark:text-white">BulkVidCropper</span>
-        </div>
-        <div className="hidden md:flex space-x-8">
-          <a href="#features" className="text-gray-600 hover:text-teal-600 dark:text-gray-300 dark:hover:text-teal-400 transition-colors">Features</a>
-          <a href="#how-it-works" className="text-gray-600 hover:text-teal-600 dark:text-gray-300 dark:hover:text-teal-400 transition-colors">How It Works</a>
-          <a href="#testimonials" className="text-gray-600 hover:text-teal-600 dark:text-gray-300 dark:hover:text-teal-400 transition-colors">Testimonials</a>
-        </div>
-        {!loading && (
-          user ? (
-            <Link 
-              href="/editor" 
-              className="hidden md:block px-5 py-2 bg-gradient-to-r from-orange-400 to-orange-600 text-white rounded-lg font-medium hover:from-orange-500 hover:to-orange-700 transition-all shadow-md"
-            >
-              Start Cropping Now
-            </Link>
-          ) : (
-            <div className="space-x-4">
-              <Link href="/auth/signin" className="inline-block px-6 py-3 bg-gradient-to-r from-orange-400 to-orange-600 text-white rounded-lg font-medium hover:from-orange-500 hover:to-orange-700 transition-all shadow-md">
-                Sign In
-              </Link>
-              <Link href="/auth/signup" className="inline-block px-6 py-3 bg-gradient-to-r from-teal-500 to-teal-700 text-white rounded-lg font-medium hover:from-teal-600 hover:to-teal-800 transition-all shadow-md">
-                Sign Up
-              </Link>
-            </div>
-          )
-        )}
-      </nav>
-      {/* Hero Section */}
-      <header className="container mx-auto px-4 py-16 md:py-24 flex flex-col md:flex-row items-center justify-between">
-        <div className={`md:w-1/2 text-center md:text-left mb-12 md:mb-0 transition-all duration-700 ${isLoaded ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-10'}`}>
-          <span className="inline-block px-4 py-2 rounded-full bg-gradient-to-r from-teal-100 to-teal-200 text-teal-800 font-medium text-sm mb-6 dark:from-teal-900 dark:to-teal-800 dark:text-teal-200 shadow-sm">
-            Free Online Video Tool
-          </span>
-          
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 text-gray-900 dark:text-white leading-tight">
-            Crop Multiple Videos <span className="text-orange-500 dark:text-orange-400">Instantly</span>
-          </h1>
-          
-          <p className="text-xl max-w-xl mb-8 text-gray-600 dark:text-gray-300">
-            The fastest way to crop videos for Instagram, TikTok, YouTube, and all social media platforms. No watermarks, no sign-up required.
-          </p>
-          
-          <div className="flex flex-col sm:flex-row gap-4">
-            <Link 
-              href="/editor" 
-              className="px-8 py-4 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg font-medium text-lg hover:from-orange-600 hover:to-orange-700 transition-all shadow-md inline-flex items-center justify-center transform hover:scale-105 duration-200"
-            >
-              Start Cropping Now
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
-              </svg>
-            </Link>
-            <a 
-              href="#how-it-works" 
-              className="px-8 py-4 bg-white text-transparent bg-clip-text bg-gradient-to-r from-teal-500 to-teal-700 border border-teal-600 rounded-lg font-medium text-lg hover:bg-teal-50 transition-all shadow-sm inline-flex items-center justify-center dark:bg-gray-800 dark:border-teal-500 dark:hover:bg-gray-700 transform hover:scale-105 duration-200"
-            >
-              How It Works
-            </a>
-          </div>
-          
-          <div className="mt-8 flex items-center justify-center md:justify-start">
-            <div className="flex -space-x-2">
-              <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-sm border-2 border-white dark:border-gray-800">JD</div>
-              <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 font-bold text-sm border-2 border-white dark:border-gray-800">KT</div>
-              <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 font-bold text-sm border-2 border-white dark:border-gray-800">MR</div>
-            </div>
-            <div className="ml-4 text-sm text-gray-600 dark:text-gray-400">
-              <span className="font-bold">1,000+</span> videos processed today
-            </div>
-          </div>
-        </div>
-        
-        <div className={`md:w-1/2 relative transition-all duration-700 ${isLoaded ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-10'}`}>
-          <div className="relative z-10 bg-white dark:bg-gray-800 rounded-xl shadow-2xl overflow-hidden">
-            <div className="aspect-video relative">
-              <div className="absolute inset-0 bg-gray-200 dark:bg-gray-700 animate-pulse"></div>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
-                  </svg>
-                </div>
+      {/* Background decoration elements */}
+      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
+        <div className="absolute top-20 left-10 w-64 h-64 bg-gradient-to-br from-teal-300 to-teal-400 rounded-full filter blur-3xl opacity-20 animate-blob"></div>
+        <div className="absolute top-40 right-10 w-72 h-72 bg-gradient-to-br from-orange-300 to-pink-400 rounded-full filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
+        <div className="absolute bottom-20 left-1/3 w-80 h-80 bg-gradient-to-br from-blue-300 to-purple-400 rounded-full filter blur-3xl opacity-20 animate-blob animation-delay-4000"></div>
+        <div className="hidden md:block absolute -top-10 -right-10 w-28 h-28 bg-teal-500 opacity-30 rounded-lg transform rotate-12"></div>
+        <div className="hidden md:block absolute top-1/4 -left-10 w-20 h-20 bg-orange-500 opacity-30 rounded-lg transform -rotate-12"></div>
+      </div>
+      
+      <Navbar />
+      <main className="pt-16 relative z-10">
+        <section className="relative py-20">
+          <div className="container mx-auto px-4">
+            <div className="max-w-4xl mx-auto text-center">
+              {/* Animated badge */}
+              <div className="inline-flex items-center px-4 py-2 rounded-full bg-gradient-to-r from-teal-500 to-blue-500 text-white text-sm font-medium mb-6 animate-pulse">
+                <span className="flex h-2 w-2 relative mr-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+                </span>
+                New: Batch processing now available!
               </div>
-            </div>
-            <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="h-4 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
-                  <div className="h-3 w-24 bg-gray-200 dark:bg-gray-700 rounded mt-2 animate-pulse"></div>
-                </div>
-                <div className="h-8 w-20 bg-blue-100 dark:bg-blue-900 rounded animate-pulse"></div>
+              
+              <h1 className="text-5xl md:text-7xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-teal-500 to-blue-600 dark:from-teal-400 dark:to-blue-500 mb-6 leading-tight">
+                Bulk Video Cropper
+              </h1>
+              <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-300 mb-10 max-w-3xl mx-auto">
+                Edit multiple videos at once with our powerful video editing tool. Perfect for social media content creators.
+              </p>
+              <div className="flex flex-col md:flex-row justify-center gap-6 relative z-10">
+                <Link
+                  href={isAuthenticated ? "/editor" : "/auth?source=free"}
+                  className="group relative overflow-hidden bg-gradient-to-r from-teal-500 to-blue-600 text-white px-10 py-5 rounded-xl font-bold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
+                >
+                  <span className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-teal-400 to-blue-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
+                  <span className="relative flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    Get Started for Free
+                  </span>
+                </Link>
+                <Link
+                  href="/plans"
+                  className="group relative overflow-hidden bg-white dark:bg-gray-800 text-teal-600 dark:text-teal-400 border-2 border-teal-500 dark:border-teal-400 px-10 py-5 rounded-xl font-bold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
+                >
+                  <span className="absolute top-0 left-0 w-full h-full bg-teal-50 dark:bg-gray-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
+                  <span className="relative flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-teal-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 11l5-5m0 0l5 5m-5-5v12" />
+                    </svg>
+                    See Plans & Pricing
+                  </span>
+                </Link>
+                <Link
+                  href="#how-it-works"
+                  className="group relative overflow-hidden bg-white dark:bg-gray-800 text-gray-900 dark:text-white px-10 py-5 rounded-xl font-bold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
+                >
+                  <span className="absolute top-0 left-0 w-full h-full bg-gray-100 dark:bg-gray-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
+                  <span className="relative flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-gray-500 dark:text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    How It Works
+                  </span>
+                </Link>
               </div>
             </div>
           </div>
-          
-          {/* Decorative elements */}
-          <div className="absolute top-1/4 -right-12 w-40 h-40 bg-teal-400 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob dark:mix-blend-overlay"></div>
-          <div className="absolute -bottom-8 -left-12 w-40 h-40 bg-orange-400 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000 dark:mix-blend-overlay"></div>
-          <div className="absolute top-1/3 left-1/3 w-40 h-40 bg-yellow-400 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-4000 dark:mix-blend-overlay"></div>
-        </div>
-      </header>
+        </section>
 
-      {/* Feature Highlights */}
-      <section id="features" className="container mx-auto px-4 py-20">
-        <div className="text-center mb-16">
-          <span className="inline-block px-4 py-2 rounded-full bg-teal-100 text-teal-800 font-medium text-sm mb-4 dark:bg-teal-900 dark:text-teal-200">
-            Powerful Features
-          </span>
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white">
-            Everything You Need for <span className="text-orange-500 dark:text-orange-400">Video Cropping</span>
-          </h2>
-          <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto mt-4">
-            Our tool is designed to make video cropping simple, fast, and effective for content creators of all levels.
-          </p>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {/* Feature 1 */}
-          <div className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-lg hover:shadow-xl transition-shadow border border-gray-100 dark:border-gray-700 group hover:-translate-y-1 transition-transform duration-300">
-            <div className="w-14 h-14 bg-gradient-to-br from-teal-100 to-teal-200 dark:from-teal-800 dark:to-teal-900 rounded-xl flex items-center justify-center mb-6 group-hover:from-teal-500 group-hover:to-teal-700 transition-all shadow-md">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 text-teal-600 dark:text-teal-400 group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-              </svg>
-            </div>
-            <h3 className="text-xl font-bold mb-3 text-gray-900 dark:text-white group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-teal-500 group-hover:to-teal-700 dark:group-hover:from-teal-300 dark:group-hover:to-teal-500 transition-all">
-              Bulk Video Processing
-            </h3>
-            <p className="text-gray-600 dark:text-gray-300 mb-4">
-              Save hours of work by processing multiple videos simultaneously. Perfect for content creators who need to format videos for different platforms.
-            </p>
-            <ul className="space-y-2">
-              <li className="flex items-center text-sm text-gray-600 dark:text-gray-300">
-                <svg className="h-5 w-5 text-green-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                </svg>
-                Process unlimited videos at once
-              </li>
-              <li className="flex items-center text-sm text-gray-600 dark:text-gray-300">
-                <svg className="h-5 w-5 text-green-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                </svg>
-                Apply same crop to multiple videos
-              </li>
-            </ul>
-          </div>
-          
-          {/* Feature 2 */}
-          <div className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-lg hover:shadow-xl transition-shadow border border-gray-100 dark:border-gray-700 group hover:-translate-y-1 transition-transform duration-300">
-            <div className="w-14 h-14 bg-purple-100 dark:bg-purple-900 rounded-xl flex items-center justify-center mb-6 group-hover:bg-purple-600 transition-colors">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 text-purple-600 dark:text-purple-400 group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
-              </svg>
-            </div>
-            <h3 className="text-xl font-bold mb-3 text-gray-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
-              Precise Crop Control
-            </h3>
-            <p className="text-gray-600 dark:text-gray-300 mb-4">
-              Our intuitive drag-and-crop interface lets you visually select exactly the part of the video you want to keep with pixel-perfect precision.
-            </p>
-            <ul className="space-y-2">
-              <li className="flex items-center text-sm text-gray-600 dark:text-gray-300">
-                <svg className="h-5 w-5 text-green-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                </svg>
-                Drag edges for precise adjustments
-              </li>
-              <li className="flex items-center text-sm text-gray-600 dark:text-gray-300">
-                <svg className="h-5 w-5 text-green-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                </svg>
-                Common aspect ratio presets
-              </li>
-            </ul>
-          </div>
-          
-          {/* Feature 3 */}
-          <div className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-lg hover:shadow-xl transition-shadow border border-gray-100 dark:border-gray-700 group hover:-translate-y-1 transition-transform duration-300">
-            <div className="w-14 h-14 bg-green-100 dark:bg-green-900 rounded-xl flex items-center justify-center mb-6 group-hover:bg-green-600 transition-colors">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 text-green-600 dark:text-green-400 group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-              </svg>
-            </div>
-            <h3 className="text-xl font-bold mb-3 text-gray-900 dark:text-white group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors">
-              Fast Processing & Download
-            </h3>
-            <p className="text-gray-600 dark:text-gray-300 mb-4">
-              Our optimized processing engine handles your videos quickly, and you can download individually or in bulk when complete.
-            </p>
-            <ul className="space-y-2">
-              <li className="flex items-center text-sm text-gray-600 dark:text-gray-300">
-                <svg className="h-5 w-5 text-green-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                </svg>
-                Preview before downloading
-              </li>
-              <li className="flex items-center text-sm text-gray-600 dark:text-gray-300">
-                <svg className="h-5 w-5 text-green-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                </svg>
-                Download all videos with one click
-              </li>
-            </ul>
-          </div>
-          
-          {/* Feature 4 */}
-          <div className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-lg hover:shadow-xl transition-shadow border border-gray-100 dark:border-gray-700 group hover:-translate-y-1 transition-transform duration-300">
-            <div className="w-14 h-14 bg-red-100 dark:bg-red-900 rounded-xl flex items-center justify-center mb-6 group-hover:bg-red-600 transition-colors">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 text-red-600 dark:text-red-400 group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-              </svg>
-            </div>
-            <h3 className="text-xl font-bold mb-3 text-gray-900 dark:text-white group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">
-              100% Private & Secure
-            </h3>
-            <p className="text-gray-600 dark:text-gray-300 mb-4">
-              All processing happens directly in your browser. Your videos never leave your device, ensuring complete privacy.
-            </p>
-            <ul className="space-y-2">
-              <li className="flex items-center text-sm text-gray-600 dark:text-gray-300">
-                <svg className="h-5 w-5 text-green-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                </svg>
-                No cloud uploads required
-              </li>
-              <li className="flex items-center text-sm text-gray-600 dark:text-gray-300">
-                <svg className="h-5 w-5 text-green-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                </svg>
-                No account registration needed
-              </li>
-            </ul>
-          </div>
-          
-          {/* Feature 5 */}
-          <div className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-lg hover:shadow-xl transition-shadow border border-gray-100 dark:border-gray-700 group hover:-translate-y-1 transition-transform duration-300">
-            <div className="w-14 h-14 bg-yellow-100 dark:bg-yellow-900 rounded-xl flex items-center justify-center mb-6 group-hover:bg-yellow-600 transition-colors">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 text-yellow-600 dark:text-yellow-400 group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-              </svg>
-            </div>
-            <h3 className="text-xl font-bold mb-3 text-gray-900 dark:text-white group-hover:text-yellow-600 dark:group-hover:text-yellow-400 transition-colors">
-              Social Media Optimized
-            </h3>
-            <p className="text-gray-600 dark:text-gray-300 mb-4">
-              Preset aspect ratios for all major social platforms, so your videos always look perfect wherever you post them.
-            </p>
-            <ul className="space-y-2">
-              <li className="flex items-center text-sm text-gray-600 dark:text-gray-300">
-                <svg className="h-5 w-5 text-green-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                </svg>
-                Instagram, TikTok, YouTube presets
-              </li>
-              <li className="flex items-center text-sm text-gray-600 dark:text-gray-300">
-                <svg className="h-5 w-5 text-green-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                </svg>
-                Custom aspect ratios available
-              </li>
-            </ul>
-          </div>
-          
-          {/* Feature 6 */}
-          <div className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-lg hover:shadow-xl transition-shadow border border-gray-100 dark:border-gray-700 group hover:-translate-y-1 transition-transform duration-300">
-            <div className="w-14 h-14 bg-indigo-100 dark:bg-indigo-900 rounded-xl flex items-center justify-center mb-6 group-hover:bg-indigo-600 transition-colors">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 text-indigo-600 dark:text-indigo-400 group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-            </div>
-            <h3 className="text-xl font-bold mb-3 text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-              No Quality Loss
-            </h3>
-            <p className="text-gray-600 dark:text-gray-300 mb-4">
-              Our advanced processing maintains video quality while cropping, so your content always looks professional.
-            </p>
-            <ul className="space-y-2">
-              <li className="flex items-center text-sm text-gray-600 dark:text-gray-300">
-                <svg className="h-5 w-5 text-green-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                </svg>
-                Maintains original resolution
-              </li>
-              <li className="flex items-center text-sm text-gray-600 dark:text-gray-300">
-                <svg className="h-5 w-5 text-green-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                </svg>
-                No watermarks or branding
-              </li>
-            </ul>
-          </div>
-        </div>
-      </section>
-      
-      {/* How It Works Section */}
-      <section id="how-it-works" className="container mx-auto px-4 py-20 bg-gradient-to-br from-teal-50 to-teal-100 dark:from-gray-800 dark:to-gray-900 rounded-3xl my-12 shadow-xl">
-        <div className="text-center mb-16">
-          <span className="inline-block px-4 py-2 rounded-full bg-orange-100 text-orange-800 font-medium text-sm mb-4 dark:bg-orange-900 dark:text-orange-200">
-            Simple Process
-          </span>
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white">
-            How <span className="text-teal-600 dark:text-teal-400">Bulk Video Cropper</span> Works
-          </h2>
-          <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto mt-4">
-            Crop multiple videos in just a few simple steps - no technical skills required.
-          </p>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-          {/* Step 1 */}
-          <div className="relative">
-            <div className="bg-white dark:bg-gray-700 rounded-xl p-8 shadow-lg relative h-full border border-gray-100 dark:border-gray-600">
-              <div className="w-12 h-12 bg-gradient-to-br from-teal-500 to-teal-700 text-white rounded-full flex items-center justify-center font-bold text-xl mb-6 shadow-md">1</div>
-              <h3 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">Upload Your Videos</h3>
-              <p className="text-gray-600 dark:text-gray-300">
-                Select and upload multiple videos from your device. Our tool accepts all common video formats.
-              </p>
-            </div>
-            <div className="hidden md:block absolute top-1/2 -right-12 transform -translate-y-1/2 z-10">
-              <svg className="w-24 h-8 text-teal-500" fill="none" viewBox="0 0 24 8" stroke="currentColor">
-                <path d="M23.354 4.354a.5.5 0 0 0 0-.708L20.172.464a.5.5 0 0 0-.708.708L22.293 4l-2.829 2.828a.5.5 0 1 0 .708.708l3.182-3.182zM0 4.5h23v-1H0v1z" fill="currentColor"/>
-              </svg>
-            </div>
-          </div>
-          
-          {/* Step 2 */}
-          <div className="relative">
-            <div className="bg-white dark:bg-gray-700 rounded-xl p-8 shadow-lg relative h-full border border-gray-100 dark:border-gray-600">
-              <div className="w-12 h-12 bg-gradient-to-br from-orange-400 to-orange-600 text-white rounded-full flex items-center justify-center font-bold text-xl mb-6 shadow-md">2</div>
-              <h3 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">Set Crop Dimensions</h3>
-              <p className="text-gray-600 dark:text-gray-300">
-                Use our intuitive drag-and-crop interface to select the exact portion of your videos you want to keep.
-              </p>
-            </div>
-            <div className="hidden md:block absolute top-1/2 -right-12 transform -translate-y-1/2 z-10">
-              <svg className="w-24 h-8 text-orange-500" fill="none" viewBox="0 0 24 8" stroke="currentColor">
-                <path d="M23.354 4.354a.5.5 0 0 0 0-.708L20.172.464a.5.5 0 0 0-.708.708L22.293 4l-2.829 2.828a.5.5 0 1 0 .708.708l3.182-3.182zM0 4.5h23v-1H0v1z" fill="currentColor"/>
-              </svg>
-            </div>
-          </div>
-          
-          {/* Step 3 */}
-          <div>
-            <div className="bg-white dark:bg-gray-700 rounded-xl p-8 shadow-lg relative h-full border border-gray-100 dark:border-gray-600">
-              <div className="w-12 h-12 bg-gradient-to-br from-teal-500 to-teal-700 text-white rounded-full flex items-center justify-center font-bold text-xl mb-6 shadow-md">3</div>
-              <h3 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">Process & Download</h3>
-              <p className="text-gray-600 dark:text-gray-300">
-                Click process, preview your results, and download your cropped videos individually or all at once.
-              </p>
-            </div>
-          </div>
-        </div>
-        
-        <div className="text-center mt-16">
-          <Link 
-            href="/editor" 
-            className="px-8 py-4 bg-orange-500 text-white rounded-lg font-medium text-lg hover:bg-orange-600 transition-colors shadow-md inline-flex items-center justify-center"
-          >
-            Try It Now - It's Free
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
-            </svg>
-          </Link>
-        </div>
-      </section>
-      
-      {/* Testimonials Section */}
-      <section id="testimonials" className="container mx-auto px-4 py-20">
-        <div className="text-center mb-16">
-          <span className="inline-block px-4 py-2 rounded-full bg-yellow-100 text-yellow-800 font-medium text-sm mb-4 dark:bg-yellow-900 dark:text-yellow-200">
-            User Feedback
-          </span>
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white">
-            What Content Creators Are <span className="text-yellow-600 dark:text-yellow-400">Saying</span>
-          </h2>
-          <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto mt-4">
-            Join thousands of satisfied users who save time with our bulk video cropping tool.
-          </p>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {/* Testimonial 1 */}
-          <div className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">
-            <div className="flex items-center mb-6">
-              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold text-xl mr-4">J</div>
-              <div>
-                <h4 className="font-bold text-gray-900 dark:text-white">James Wilson</h4>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Instagram Content Creator</p>
-              </div>
-            </div>
-            <div className="flex mb-4">
-              {[...Array(5)].map((_, i) => (
-                <svg key={i} className="w-5 h-5 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                </svg>
-              ))}
-            </div>
-            <p className="text-gray-600 dark:text-gray-300 mb-4">
-              "This tool has saved me so much time! I used to spend hours cropping videos for different platforms, but now I can do it all at once. The drag-to-crop feature is incredibly intuitive."
-            </p>
-          </div>
-          
-          {/* Testimonial 2 */}
-          <div className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">
-            <div className="flex items-center mb-6">
-              <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center text-purple-600 font-bold text-xl mr-4">S</div>
-              <div>
-                <h4 className="font-bold text-gray-900 dark:text-white">Sarah Johnson</h4>
-                <p className="text-sm text-gray-600 dark:text-gray-400">TikTok Creator</p>
-              </div>
-            </div>
-            <div className="flex mb-4">
-              {[...Array(5)].map((_, i) => (
-                <svg key={i} className="w-5 h-5 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                </svg>
-              ))}
-            </div>
-            <p className="text-gray-600 dark:text-gray-300 mb-4">
-              "I love that I can crop multiple videos at once for my TikTok content. The preset aspect ratios make it super easy to get the perfect format every time. Highly recommend!"
-            </p>
-          </div>
-          
-          {/* Testimonial 3 */}
-          <div className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">
-            <div className="flex items-center mb-6">
-              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center text-green-600 font-bold text-xl mr-4">M</div>
-              <div>
-                <h4 className="font-bold text-gray-900 dark:text-white">Michael Rodriguez</h4>
-                <p className="text-sm text-gray-600 dark:text-gray-400">YouTube Content Creator</p>
-              </div>
-            </div>
-            <div className="flex mb-4">
-              {[...Array(5)].map((_, i) => (
-                <svg key={i} className="w-5 h-5 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                </svg>
-              ))}
-            </div>
-            <p className="text-gray-600 dark:text-gray-300 mb-4">
-              "As a YouTube creator, I need different crops for my main videos, shorts, and promotional clips. This tool lets me do it all at once with perfect precision. The edge dragging feature is a game-changer!"
-            </p>
-          </div>
-        </div>
-      </section>
-      
-      {/* CTA Section */}
-      <section className="container mx-auto px-4 py-16 my-8">
-        <div className="bg-gradient-to-br from-teal-600 via-teal-500 to-orange-500 rounded-2xl p-10 md:p-16 text-center text-white shadow-xl relative overflow-hidden border border-white/10">
-          <div className="absolute inset-0 bg-pattern opacity-10"></div>
-          <div className="relative z-10">
-            <h2 className="text-3xl md:text-4xl font-bold mb-6">
-              Ready to Crop Your Videos?<br />
-              Start Using Bulk Video Cropper Today
+        {/* How It Works Section */}
+        <section id="how-it-works" className="container mx-auto px-4 py-20 bg-gradient-to-br from-teal-50 to-teal-100 dark:from-gray-800 dark:to-gray-900 rounded-3xl my-12 shadow-xl">
+          <div className="text-center mb-16">
+            <span className="inline-block px-4 py-2 rounded-full bg-orange-100 text-orange-800 font-medium text-sm mb-4 dark:bg-orange-900 dark:text-orange-200">
+              Simple Process
+            </span>
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white">
+              How <span className="text-teal-600 dark:text-teal-400">Bulk Video Cropper</span> Works
             </h2>
-            <p className="text-xl mb-8 max-w-3xl mx-auto text-white">
-              Join thousands of content creators who save time with our free, easy-to-use bulk video cropping tool.
+            <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto mt-4">
+              Crop multiple videos in just a few simple steps - no technical skills required.
             </p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto relative">
+            {/* Step 1 */}
+            <div className="relative">
+              <div className="bg-white dark:bg-gray-700 rounded-xl p-8 shadow-lg relative h-full border border-gray-100 dark:border-gray-600">
+                <div className="w-12 h-12 bg-gradient-to-br from-teal-500 to-teal-700 text-white rounded-full flex items-center justify-center font-bold text-xl mb-6 shadow-md">1</div>
+                <h3 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">Upload Videos</h3>
+                <p className="text-gray-600 dark:text-gray-300">
+                  Drag and drop multiple videos into our platform.
+                </p>
+              </div>
+              <div className="hidden md:block absolute top-1/2 -right-12 transform -translate-y-1/2 z-10">
+                <svg className="w-24 h-8 text-teal-500" fill="none" viewBox="0 0 24 8" stroke="currentColor">
+                  <path d="M23.354 4.354a.5.5 0 0 0 0-.708L20.172.464a.5.5 0 0 0-.708.708L22.293 4l-2.829 2.828a.5.5 0 1 0 .708.708l3.182-3.182zM0 4.5h23v-1H0v1z" fill="currentColor"/>
+                </svg>
+              </div>
+            </div>
+            
+            {/* Step 2 */}
+            <div className="relative">
+              <div className="bg-white dark:bg-gray-700 rounded-xl p-8 shadow-lg relative h-full border border-gray-100 dark:border-gray-600">
+                <div className="w-12 h-12 bg-gradient-to-br from-orange-400 to-orange-600 text-white rounded-full flex items-center justify-center font-bold text-xl mb-6 shadow-md">2</div>
+                <h3 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">AI Processing</h3>
+                <p className="text-gray-600 dark:text-gray-300">
+                  Our AI analyzes and processes your videos to optimize them for social media.
+                </p>
+              </div>
+              <div className="hidden md:block absolute top-1/2 -right-12 transform -translate-y-1/2 z-10">
+                <svg className="w-24 h-8 text-orange-500" fill="none" viewBox="0 0 24 8" stroke="currentColor">
+                  <path d="M23.354 4.354a.5.5 0 0 0 0-.708L20.172.464a.5.5 0 0 0-.708.708L22.293 4l-2.829 2.828a.5.5 0 1 0 .708.708l3.182-3.182zM0 4.5h23v-1H0v1z" fill="currentColor"/>
+                </svg>
+              </div>
+            </div>
+            
+            {/* Step 3 */}
+            <div>
+              <div className="bg-white dark:bg-gray-700 rounded-xl p-8 shadow-lg relative h-full border border-gray-100 dark:border-gray-600">
+                <div className="w-12 h-12 bg-gradient-to-br from-teal-500 to-teal-700 text-white rounded-full flex items-center justify-center font-bold text-xl mb-6 shadow-md">3</div>
+                <h3 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">Export & Share</h3>
+                <p className="text-gray-600 dark:text-gray-300">
+                  Download your optimized videos and share them directly to social media.
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="text-center mt-16">
             <Link 
               href="/editor" 
-              className="px-8 py-4 bg-white text-transparent bg-clip-text bg-gradient-to-r from-teal-600 to-orange-500 rounded-lg font-medium text-lg hover:bg-gray-50 transition-all shadow-md inline-flex items-center justify-center border border-teal-100 transform hover:scale-105 duration-200"
+              className="px-8 py-4 bg-orange-500 text-white rounded-lg font-medium text-lg hover:bg-orange-600 transition-colors shadow-md inline-flex items-center justify-center"
             >
-              Get Started Now
+              Try It Now - It's Free
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
               </svg>
             </Link>
           </div>
-        </div>
-      </section>
-      
-      {/* Footer */}
-      <footer className="bg-gray-100 dark:bg-gray-800 py-12 mt-12">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
-            <div>
-              <div className="flex items-center mb-4">
-                <div className="w-8 h-8 bg-gradient-to-br from-teal-500 to-teal-700 rounded-lg flex items-center justify-center mr-2 shadow-sm">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 4v16M17 4v16M3 8h18M3 16h18" />
-                  </svg>
-                </div>
-                <span className="font-bold text-xl text-gray-900 dark:text-white">BulkVidCropper</span>
+        </section>
+
+        {/* Features Section */}
+        <section id="features" className="py-20 bg-white dark:bg-gray-900">
+          <div className="container mx-auto px-4">
+            <h2 className="text-4xl font-bold text-center text-gray-900 dark:text-white mb-12">
+              Features
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow">
+                <div className="text-teal-500 text-4xl mb-4">🚀</div>
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                  Batch Processing
+                </h3>
+                <p className="text-gray-600 dark:text-gray-300">
+                  Process multiple videos simultaneously, saving you time and effort.
+                </p>
               </div>
-              <p className="text-gray-600 dark:text-gray-400 mb-4">
-                The fastest way to crop multiple videos for social media. Free, online, and no sign-up required.
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow">
+                <div className="text-teal-500 text-4xl mb-4">✨</div>
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                  Advanced Cropping
+                </h3>
+                <p className="text-gray-600 dark:text-gray-300">
+                  Precise video cropping with multiple aspect ratios for all social media platforms.
+                </p>
+              </div>
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow">
+                <div className="text-teal-500 text-4xl mb-4">📊</div>
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                  Subscription Plans
+                </h3>
+                <p className="text-gray-600 dark:text-gray-300">
+                  Choose from multiple plans to suit your video editing needs.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Pricing Section */}
+        <section id="pricing" className="py-20 bg-gradient-to-br from-teal-50 via-white to-orange-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+          <div className="container mx-auto px-4">
+            <h2 className="text-4xl font-bold text-center text-gray-900 dark:text-white mb-12">
+              Pricing Plans
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+              {/* Free Plan */}
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 hover:shadow-xl transition-shadow border-t-4 border-gray-200 dark:border-gray-700 relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 -z-10 opacity-50"></div>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                  Free
+                </h3>
+                <div className="text-4xl font-bold text-gray-800 dark:text-white mb-6">
+                  $0<span className="text-sm text-gray-500 font-normal">/month</span>
+                </div>
+                <ul className="space-y-3 mb-8">
+                  <li className="flex items-center text-gray-600 dark:text-gray-300">
+                    <svg className="w-5 h-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                    5 videos per month
+                  </li>
+                  <li className="flex items-center text-gray-600 dark:text-gray-300">
+                    <svg className="w-5 h-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                    Basic video cropping
+                  </li>
+                  <li className="flex items-center text-gray-600 dark:text-gray-300">
+                    <svg className="w-5 h-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                    720p output quality
+                  </li>
+                  <li className="flex items-center text-gray-600 dark:text-gray-300">
+                    <svg className="w-5 h-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                    Small watermark
+                  </li>
+                </ul>
+                <Link
+                  href="/auth?source=free"
+                  className="block w-full py-3 px-4 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-center text-gray-700 dark:text-white font-medium rounded-lg transition-colors"
+                >
+                  Get Started Free
+                </Link>
+              </div>
+
+              {/* Premium Plan */}
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-8 hover:shadow-2xl transition-shadow border-t-4 border-teal-500 dark:border-teal-400 relative scale-105 z-10 overflow-hidden">
+                <div className="absolute -top-6 -right-6 bg-teal-500 text-white text-xs font-bold px-4 py-1 rotate-45 transform w-28">
+                  POPULAR
+                </div>
+                <div className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-br from-teal-50 to-teal-100 dark:from-teal-900/20 dark:to-teal-800/10 -z-10 opacity-50"></div>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                  Premium
+                </h3>
+                <div className="text-4xl font-bold text-gray-800 dark:text-white mb-6">
+                  $9.99<span className="text-sm text-gray-500 font-normal">/month</span>
+                </div>
+                <ul className="space-y-3 mb-8">
+                  <li className="flex items-center text-gray-600 dark:text-gray-300">
+                    <svg className="w-5 h-5 text-teal-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                    <strong>50 videos per month</strong>
+                  </li>
+                  <li className="flex items-center text-gray-600 dark:text-gray-300">
+                    <svg className="w-5 h-5 text-teal-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                    <strong>Advanced cropping options</strong>
+                  </li>
+                  <li className="flex items-center text-gray-600 dark:text-gray-300">
+                    <svg className="w-5 h-5 text-teal-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                    <strong>1080p HD output quality</strong>
+                  </li>
+                  <li className="flex items-center text-gray-600 dark:text-gray-300">
+                    <svg className="w-5 h-5 text-teal-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                    <strong>No watermark</strong>
+                  </li>
+                  <li className="flex items-center text-gray-600 dark:text-gray-300">
+                    <svg className="w-5 h-5 text-teal-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                    <strong>Priority support</strong>
+                  </li>
+                </ul>
+                <Link
+                  href="/auth"
+                  className="block w-full py-3 px-4 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-center text-white font-medium rounded-lg transition-colors shadow-md"
+                >
+                  Upgrade to Premium
+                </Link>
+              </div>
+
+              {/* Pro Plan */}
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 hover:shadow-xl transition-shadow border-t-4 border-purple-500 dark:border-purple-400 relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/10 -z-10 opacity-50"></div>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                  Pro
+                </h3>
+                <div className="text-4xl font-bold text-gray-800 dark:text-white mb-6">
+                  $29.99<span className="text-sm text-gray-500 font-normal">/month</span>
+                </div>
+                <ul className="space-y-3 mb-8">
+                  <li className="flex items-center text-gray-600 dark:text-gray-300">
+                    <svg className="w-5 h-5 text-purple-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                    <strong>Unlimited videos</strong>
+                  </li>
+                  <li className="flex items-center text-gray-600 dark:text-gray-300">
+                    <svg className="w-5 h-5 text-purple-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                    <strong>All Premium features</strong>
+                  </li>
+                  <li className="flex items-center text-gray-600 dark:text-gray-300">
+                    <svg className="w-5 h-5 text-purple-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                    <strong>4K output quality</strong>
+                  </li>
+                  <li className="flex items-center text-gray-600 dark:text-gray-300">
+                    <svg className="w-5 h-5 text-purple-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                    <strong>Batch processing</strong>
+                  </li>
+                  <li className="flex items-center text-gray-600 dark:text-gray-300">
+                    <svg className="w-5 h-5 text-purple-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                    <strong>24/7 dedicated support</strong>
+                  </li>
+                </ul>
+                <Link
+                  href="/auth"
+                  className="block w-full py-3 px-4 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-center text-white font-medium rounded-lg transition-colors shadow-md"
+                >
+                  Upgrade to Pro
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Testimonials Section */}
+        <section id="testimonials" className="py-20 bg-white dark:bg-gray-900">
+          <div className="container mx-auto px-4">
+            <h2 className="text-4xl font-bold text-center text-gray-900 dark:text-white mb-12">
+              What Our Users Say
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+              <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg shadow-md">
+                <div className="flex items-center mb-4">
+                  <div className="h-12 w-12 rounded-full bg-teal-100 dark:bg-teal-900 flex items-center justify-center text-teal-500 dark:text-teal-300 text-xl font-bold mr-4">
+                    S
+                  </div>
+                  <div>
+                    <h4 className="text-lg font-semibold text-gray-900 dark:text-white">Sarah K.</h4>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Social Media Manager</p>
+                  </div>
+                </div>
+                <p className="text-gray-600 dark:text-gray-300 italic">
+                  "This tool has saved me hours of work every week. I can now crop all my videos for different platforms in minutes!"
+                </p>
+              </div>
+              <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg shadow-md">
+                <div className="flex items-center mb-4">
+                  <div className="h-12 w-12 rounded-full bg-teal-100 dark:bg-teal-900 flex items-center justify-center text-teal-500 dark:text-teal-300 text-xl font-bold mr-4">
+                    M
+                  </div>
+                  <div>
+                    <h4 className="text-lg font-semibold text-gray-900 dark:text-white">Michael T.</h4>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Content Creator</p>
+                  </div>
+                </div>
+                <p className="text-gray-600 dark:text-gray-300 italic">
+                  "The batch processing feature is a game-changer. I can now prepare content for all my social channels at once."
+                </p>
+              </div>
+              <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg shadow-md">
+                <div className="flex items-center mb-4">
+                  <div className="h-12 w-12 rounded-full bg-teal-100 dark:bg-teal-900 flex items-center justify-center text-teal-500 dark:text-teal-300 text-xl font-bold mr-4">
+                    J
+                  </div>
+                  <div>
+                    <h4 className="text-lg font-semibold text-gray-900 dark:text-white">Jessica L.</h4>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Marketing Director</p>
+                  </div>
+                </div>
+                <p className="text-gray-600 dark:text-gray-300 italic">
+                  "The premium plan is worth every penny. The quality and speed of processing has significantly improved our workflow."
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* CTA Section */}
+        <section className="py-20 bg-gradient-to-br from-teal-500 to-teal-700 dark:from-teal-700 dark:to-teal-900 text-white">
+          <div className="container mx-auto px-4 text-center">
+            <h2 className="text-4xl font-bold mb-6">Ready to Transform Your Video Workflow?</h2>
+            <p className="text-xl mb-8 max-w-3xl mx-auto">
+              Join thousands of content creators who are saving time and producing better content with our bulk video cropping tool.
+            </p>
+            <Link
+              href="/auth"
+              className="inline-block bg-white text-teal-600 px-8 py-4 rounded-lg font-semibold hover:bg-gray-100 transition-all transform hover:-translate-y-1 shadow-lg"
+            >
+              Get Started Today
+            </Link>
+          </div>
+        </section>
+
+        {/* Back to Top Button */}
+        <button
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          className="fixed bottom-8 right-8 bg-teal-500 text-white rounded-full p-3 shadow-lg hover:bg-teal-600 transition-colors z-50"
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+          </svg>
+        </button>
+
+        {/* Footer */}
+        <footer className="bg-gray-900 text-gray-400 py-12">
+          <div className="container mx-auto px-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+              <div>
+                <h3 className="text-white text-lg font-semibold mb-4">Bulk Video Cropper</h3>
+                <p className="mb-4">
+                  Intelligent video cropping for content creators and marketers. Transform your video workflow with our AI-powered tools.
+                </p>
+                <div className="flex space-x-4 mt-4">
+                  <Link href="https://twitter.com/bulkvidcropper" className="text-gray-400 hover:text-teal-400 transition-colors">
+                    <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M23 3a10.9 10.9 0 01-3.14 1.53 4.48 4.48 0 00-7.86 3v1A10.66 10.66 0 013 4s-4 9 5 13a11.64 11.64 0 01-7 2c9 5 20 0 20-11.5a4.5 4.5 0 00-.08-.83A7.72 7.72 0 0023 3z" />
+                    </svg>
+                  </Link>
+                  <Link href="https://linkedin.com/company/bulkvidcropper" className="text-gray-400 hover:text-teal-400 transition-colors">
+                    <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16.5 6a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zm0 9a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zm0 6a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0" />
+                    </svg>
+                  </Link>
+                  <Link href="https://instagram.com/bulkvidcropper" className="text-gray-400 hover:text-teal-400 transition-colors">
+                    <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 21.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                  </Link>
+                </div>
+              </div>
+              <div>
+                <h4 className="text-white text-md font-semibold mb-4">Product</h4>
+                <ul className="space-y-2">
+                  <li>
+                    <Link href="#features" className="hover:text-teal-400 transition-colors">
+                      Features
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="#pricing" className="hover:text-teal-400 transition-colors">
+                      Pricing
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/editor" className="hover:text-teal-400 transition-colors">
+                      Try Demo
+                    </Link>
+                  </li>
+                </ul>
+              </div>
+              <div>
+                <h4 className="text-white text-md font-semibold mb-4">Company</h4>
+                <ul className="space-y-2">
+                  <li>
+                    <Link href="/about" className="hover:text-teal-400 transition-colors">
+                      About Us
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/contact" className="hover:text-teal-400 transition-colors">
+                      Contact
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/careers" className="hover:text-teal-400 transition-colors">
+                      Careers
+                    </Link>
+                  </li>
+                </ul>
+              </div>
+              <div>
+                <h4 className="text-white text-md font-semibold mb-4">Legal</h4>
+                <ul className="space-y-2">
+                  <li>
+                    <Link href="/privacy" className="hover:text-teal-400 transition-colors">
+                      Privacy Policy
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/terms" className="hover:text-teal-400 transition-colors">
+                      Terms of Service
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/cookies" className="hover:text-teal-400 transition-colors">
+                      Cookie Policy
+                    </Link>
+                  </li>
+                </ul>
+              </div>
+            </div>
+            <div className="border-t border-gray-800 mt-8 pt-8 text-center">
+              <p className="text-sm">
+                &copy; {new Date().getFullYear()} Bulk Video Cropper. All rights reserved.
+              </p>
+              <p className="mt-2 text-xs">
+                Currently offering a 20% discount on Premium plans with code SUMMER20
               </p>
             </div>
-            
-            <div>
-              <h3 className="font-bold text-gray-900 dark:text-white mb-4">Features</h3>
-              <ul className="space-y-2">
-                <li><a href="#features" className="text-gray-600 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400">Bulk Processing</a></li>
-                <li><a href="#features" className="text-gray-600 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400">Precise Crop Control</a></li>
-                <li><a href="#features" className="text-gray-600 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400">Fast Processing</a></li>
-                <li><a href="#features" className="text-gray-600 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400">Privacy & Security</a></li>
-              </ul>
-            </div>
-            
-            <div>
-              <h3 className="font-bold text-gray-900 dark:text-white mb-4">Resources</h3>
-              <ul className="space-y-2">
-                <li><a href="#how-it-works" className="text-gray-600 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400">How It Works</a></li>
-                <li><a href="#testimonials" className="text-gray-600 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400">Testimonials</a></li>
-                <li><Link href="/editor" className="text-gray-600 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400">Video Editor</Link></li>
-              </ul>
-            </div>
-            
-            <div>
-              <h3 className="font-bold text-gray-900 dark:text-white mb-4">Social Media Formats</h3>
-              <ul className="space-y-2">
-                <li><span className="text-gray-600 dark:text-gray-400">Instagram (1:1, 4:5, 9:16)</span></li>
-                <li><span className="text-gray-600 dark:text-gray-400">TikTok (9:16)</span></li>
-                <li><span className="text-gray-600 dark:text-gray-400">YouTube (16:9, 1:1, 9:16)</span></li>
-                <li><span className="text-gray-600 dark:text-gray-400">Facebook (16:9, 1:1, 4:5)</span></li>
-              </ul>
-            </div>
           </div>
-          
-          <div className="border-t border-gray-200 dark:border-gray-700 pt-8 mt-8 text-center">
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              © {new Date().getFullYear()} Bulk Video Cropper. All rights reserved.
-            </p>
-            <p className="text-xs text-gray-500 dark:text-gray-500 mt-2">
-              Optimized for Instagram, TikTok, YouTube, Facebook, Twitter, and all social media platforms.
-            </p>
-          </div>
-        </div>
-      </footer>
+        </footer>
+      </main>
     </div>
   );
 }

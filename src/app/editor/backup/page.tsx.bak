@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { processBatchVideos, cancelProcessing, loadFFmpeg } from "@/utils/ffmpeg";
 import { usePathname, useSearchParams } from "next/navigation";
-import { getVideoLimitBySubscription, getVideoDurationLimitBySubscription, getVideoSizeLimitBySubscription } from '@/utils/subscriptionLimits';
+import { getVideoLimitBySubscription } from '@/utils/subscriptionLimits';
 import ProcessingStatus from "@/components/ProcessingStatus";
 import VideoPreviewModal from "@/components/VideoPreviewModal";
 
@@ -19,17 +19,7 @@ import ErrorNotification from "@/components/ErrorNotification";
 
 export default function EditorPage() {
   const { user, subscription } = useAuth();
-  
-  // Debug logging
-  console.log('Subscription data:', subscription);
-  console.log('User data:', user);
-  
-  // Get limits based on subscription
   const videoLimit = getVideoLimitBySubscription(subscription);
-  const durationLimit = getVideoDurationLimitBySubscription(subscription);
-  const sizeLimit = getVideoSizeLimitBySubscription(subscription);
-  
-  console.log('Calculated limits:', { videoLimit, durationLimit, sizeLimit });
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -116,10 +106,10 @@ export default function EditorPage() {
         
         // Check if adding these files would exceed the configured video limit
         const currentCount = videos.length;
-        const remainingSlots = videoLimit - currentCount;
+        const remainingSlots = MAX_VIDEO_COUNT - currentCount;
         
         if (remainingSlots <= 0) {
-          setErrorMessage(`Maximum limit of ${videoLimit} videos reached. Please remove some videos before adding more.`);
+          setErrorMessage(`Maximum limit of ${MAX_VIDEO_COUNT} videos reached. Please remove some videos before adding more.`);
           return;
         }
         
@@ -127,11 +117,11 @@ export default function EditorPage() {
         const filesToProcess = files.slice(0, remainingSlots);
         
         if (files.length > remainingSlots) {
-          setErrorMessage(`Only processing ${remainingSlots} of ${files.length} videos due to the ${videoLimit} video limit.`);
+          setErrorMessage(`Only processing ${remainingSlots} of ${files.length} videos due to the ${MAX_VIDEO_COUNT} video limit.`);
         }
         
         for (const file of filesToProcess) {
-          const validation = await validateVideo(file, sizeLimit, durationLimit);
+          const validation = await validateVideo(file);
           
           const video: ValidatedVideo = {
               id: Math.random().toString(36).substring(2, 9),
@@ -1323,7 +1313,7 @@ export default function EditorPage() {
                           Click to upload multiple videos
                         </span>
                         <span className="text-xs text-gray-500 dark:text-gray-500 block mt-1">
-                          Supports MP4, WebM, MOV (max {sizeLimit}MB, max {durationLimit < 60 ? `${durationLimit} seconds` : durationLimit === 60 ? `1 minute` : `${Math.floor(durationLimit / 60)} minutes`})
+                          Supports MP4, WebM, MOV (max 100MB, max 60 seconds)
                         </span>
                         <span className="text-xs text-gray-500 dark:text-gray-500 block mt-1">
                           Maximum {videoLimit} videos allowed ({videoLimit - videos.length} slots remaining)

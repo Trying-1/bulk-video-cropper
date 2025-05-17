@@ -65,7 +65,7 @@ export const isValidVideoDuration = (duration: number, maxDurationSeconds: numbe
 /**
  * Comprehensive video file validation
  */
-export const validateVideo = async (file: File): Promise<{ 
+export const validateVideo = async (file: File, maxSizeMB: number = 100, maxDurationSeconds: number = 60): Promise<{ 
   valid: boolean; 
   errors: string[];
   duration?: number;
@@ -85,15 +85,21 @@ export const validateVideo = async (file: File): Promise<{
   }
   
   // Check file size
-  if (!isValidFileSize(file)) {
-    errors.push(`File too large: ${(file.size / (1024 * 1024)).toFixed(2)}MB. Maximum size is 100MB.`);
+  if (!isValidFileSize(file, maxSizeMB)) {
+    errors.push(`File too large: ${(file.size / (1024 * 1024)).toFixed(2)}MB. Maximum size is ${maxSizeMB}MB.`);
   }
   
   // Check video duration
   try {
     duration = await getVideoDuration(file);
-    if (!isValidVideoDuration(duration)) {
-      errors.push(`Video too long: ${duration.toFixed(1)} seconds. Maximum duration is 60 seconds.`);
+    if (!isValidVideoDuration(duration, maxDurationSeconds)) {
+      const minutes = Math.floor(maxDurationSeconds / 60);
+      const seconds = maxDurationSeconds % 60;
+      const durationText = minutes > 0 ? 
+        `${minutes} minute${minutes > 1 ? 's' : ''}${seconds > 0 ? ` ${seconds} seconds` : ''}` :
+        `${seconds} seconds`;
+      
+      errors.push(`Video too long: ${duration.toFixed(1)} seconds. Maximum duration is ${durationText}.`);
     }
   } catch (error) {
     errors.push('Could not determine video duration. Please check the file.');

@@ -1,0 +1,23 @@
+# robots.txt for Bulk Video Cropper
+User-agent: *
+Allow: /
+Allow: /auth
+Allow: /auth?promo=*
+Allow: /auth?signup=*
+Allow: /plans
+Allow: /about
+Allow: /contact
+Allow: /terms
+Allow: /privacy
+Allow: /cookies
+
+# Disallow authenticated/private routes
+Disallow: /profile
+Disallow: /editor
+Disallow: /history
+Disallow: /subscription
+Disallow: /dashboard
+Disallow: /api/
+
+# Allow sitemap
+Sitemap: https://bulkvidcropper.com/sitemap.xml

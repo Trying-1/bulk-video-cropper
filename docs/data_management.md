@@ -11,7 +11,7 @@ This document outlines the data management strategy for the Bulk Video Cropper w
 | **Basic Profile** | • Name<br>• Email<br>• Password (hashed)<br>• Account creation date | • User identification<br>• Authentication<br>• Communication | Until account deletion |
 | **Extended Profile** | • Profile picture<br>• Company/Organization<br>• Job title<br>• Industry | • Personalization<br>• Segment-specific features<br>• Marketing insights | Until account deletion |
 | **Usage Preferences** | • UI preferences<br>• Default crop settings<br>• Preferred export formats<br>• Notification settings | • Personalized experience<br>• Workflow optimization | Until account deletion |
-| **Subscription Data** | • Plan type<br>• Billing cycle<br>• Payment method (tokenized)<br>• Billing history | • Subscription management<br>• Access control<br>• Financial records | 7 years (financial records)<br>1 year after account deletion (other) |
+| **Subscription Data** | • Plan type (free/premium/pro)<br>• Used quota<br>• Next renewal date<br>• Billing cycle<br>• Payment method (tokenized)<br>• Billing history | • Subscription management<br>• Limit enforcement<br>• Access control<br>• Financial records | 7 years (financial records)<br>1 year after account deletion (other) |
 
 ### Video Processing Data
 
@@ -20,7 +20,7 @@ This document outlines the data management strategy for the Bulk Video Cropper w
 | **Video Metadata** | • Original filename<br>• Upload date<br>• Duration<br>• Resolution<br>• Format<br>• File size | • Video management<br>• Processing optimization<br>• Storage management | Duration of storage + 30 days |
 | **Processing Settings** | • Crop coordinates<br>• Aspect ratios<br>• Quality settings<br>• Export formats | • Processing instructions<br>• Reuse of settings<br>• Batch processing | Until project deletion |
 | **Processing Results** | • Processing time<br>• Output file size<br>• Compression ratio<br>• Error logs | • System optimization<br>• Error diagnosis<br>• Usage analytics | 90 days |
-| **Video Content** | • Original video files<br>• Processed video files<br>• Thumbnails<br>• Preview frames | • Core service functionality | Based on plan:<br>• Free: 7 days<br>• Basic: 30 days<br>• Pro: 90 days<br>• Enterprise: 1 year |
+| **Video Content** | • Original video files<br>• Processed video files<br>• Thumbnails<br>• Preview frames | • Core service functionality | Based on plan:<br>• Free: 7 days (max 100MB, 60 secs)<br>• Premium: 30 days (max 500MB, 5 mins)<br>• Pro: 90 days (max 2GB, 30 mins) |
 
 ### Analytics and Usage Data
 

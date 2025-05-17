@@ -8,9 +8,9 @@ This document outlines various monetization approaches for your Bulk Video Cropp
 
 | Tier | Price | Features | Target Audience |
 |------|-------|----------|----------------|
-| **Free** | $0/month | • Limited videos per month (3-5)<br>• Basic crop functionality<br>• 720p max resolution<br>• Watermarked exports<br>• Limited cloud storage (100MB) | • Casual users<br>• Students<br>• First-time visitors |
-| **Basic** | $9.99/month | • Up to 50 videos per month<br>• All crop functionality<br>• 1080p resolution<br>• No watermarks<br>• 2GB cloud storage<br>• Email support | • Content creators<br>• Small businesses<br>• Social media managers |
-| **Professional** | $19.99/month | • Unlimited videos<br>• All crop functionality<br>• 4K resolution support<br>• 10GB cloud storage<br>• Priority processing<br>• Advanced export options<br>• Priority support | • Professional content creators<br>• Marketing agencies<br>• Video production teams |
+| **Free** | $0/month | • Limited videos per month (5)<br>• Basic crop functionality<br>• 60 seconds max duration<br>• 100MB max file size<br>• Basic features | • Casual users<br>• Students<br>• First-time visitors |
+| **Premium** | $9.99/month | • Up to 40 videos per month<br>• All crop functionality<br>• 5 minutes max duration<br>• 500MB max file size<br>• Premium features<br>• Email support | • Content creators<br>• Small businesses<br>• Social media managers |
+| **Pro** | $19.99/month | • Up to 120 videos per month<br>• All crop functionality<br>• 30 minutes max duration<br>• 2GB max file size<br>• Priority processing<br>• Advanced export options<br>• Priority support | • Professional content creators<br>• Marketing agencies<br>• Video production teams |
 | **Enterprise** | $49.99/month or custom pricing | • Team accounts<br>• API access<br>• White-label options<br>• Dedicated support<br>• Custom integrations<br>• Unlimited storage | • Large organizations<br>• Educational institutions<br>• Media companies |
 
 ### Annual Discount Strategy

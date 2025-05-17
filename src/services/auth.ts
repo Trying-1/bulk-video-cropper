@@ -48,7 +48,15 @@ export const signUp = async (email: string, password: string, displayName?: stri
 export const signIn = async (email: string, password: string): Promise<User> => {
   try {
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
-    return userCredential.user;
+    const user = userCredential.user;
+    
+    // Check if we're already logged in and came from the landing page
+    if (user && window.location.pathname === '/auth') {
+      // Redirect to editor instead of profile
+      window.location.href = '/editor';
+    }
+    
+    return user;
   } catch (error) {
     console.error('Error signing in:', error);
     throw error;
@@ -137,9 +145,18 @@ export const getCurrentUser = (): User | null => {
   return auth.currentUser;
 };
 
-// Listen for auth state changes
-export const onAuthChange = (callback: (user: User | null) => void): () => void => {
-  return onAuthStateChanged(auth, callback);
+// Listen for auth state changes and return current auth state
+export const onAuthChange = (callback?: (user: User | null) => void): User | null => {
+  // Get current auth state immediately
+  const authUser = auth.currentUser;
+  
+  // If callback is provided, set up listener
+  if (callback) {
+    return onAuthStateChanged(auth, callback);
+  }
+  
+  // Return current auth state
+  return authUser;
 };
 
 // Get user profile (simplified without Firestore)

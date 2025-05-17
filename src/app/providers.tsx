@@ -1,10 +1,15 @@
 'use client';
 
-import React from 'react';
+import { AuthProvider } from '@/contexts/AuthContext';
+import { ToastProvider } from '@/components/ToastProvider';
 
-// Removed authentication context
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <>{children}</>
-  );
+    <AuthProvider>
+      <>
+        <ToastProvider />
+        {children}
+      </>
+    </AuthProvider>
+  )
 }
