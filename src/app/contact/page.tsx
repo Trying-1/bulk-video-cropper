@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
+import LegalSideNav from '@/components/LegalSideNav';
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
@@ -48,39 +49,9 @@ export default function ContactPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-      <header className="bg-white dark:bg-gray-800 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <Link href="/" className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center shadow-sm">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                </svg>
-              </div>
-              <span className="font-bold text-xl text-gray-900 dark:text-white">Bulk Video Cropper</span>
-            </Link>
-            <nav className="flex space-x-4">
-              <Link href="/" className="text-gray-600 dark:text-gray-300 hover:text-teal-600 dark:hover:text-teal-500">
-                Home
-              </Link>
-              <Link href="/about" className="text-gray-600 dark:text-gray-300 hover:text-teal-600 dark:hover:text-teal-500">
-                About
-              </Link>
-              <Link href="/privacy" className="text-gray-600 dark:text-gray-300 hover:text-teal-600 dark:hover:text-teal-500">
-                Privacy
-              </Link>
-              <Link href="/terms" className="text-gray-600 dark:text-gray-400 hover:text-teal-600 dark:hover:text-teal-500">
-                Terms
-              </Link>
-              <Link href="/contact" className="text-teal-600 dark:text-teal-500 font-medium">
-                Contact
-              </Link>
-            </nav>
-          </div>
-        </div>
-      </header>
-
+      {/* Floating Side Navigation */}
+      <LegalSideNav />
+      
       {/* Content */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="bg-white dark:bg-gray-800 shadow-sm rounded-lg p-8">

@@ -3,49 +3,61 @@
   <!-- Public Pages -->
   <url>
     <loc>https://bulkvidcropper.com/</loc>
-    <lastmod>2025-05-18</lastmod>
+    <lastmod>2025-05-19</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
     <loc>https://bulkvidcropper.com/auth</loc>
-    <lastmod>2025-05-18</lastmod>
+    <lastmod>2025-05-19</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://bulkvidcropper.com/plans</loc>
-    <lastmod>2025-05-18</lastmod>
+    <lastmod>2025-05-19</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
+    <loc>https://bulkvidcropper.com/pricing</loc>
+    <lastmod>2025-05-19</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://bulkvidcropper.com/features</loc>
+    <lastmod>2025-05-19</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://bulkvidcropper.com/about</loc>
-    <lastmod>2025-05-18</lastmod>
+    <lastmod>2025-05-19</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://bulkvidcropper.com/contact</loc>
-    <lastmod>2025-05-18</lastmod>
+    <lastmod>2025-05-19</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://bulkvidcropper.com/terms</loc>
-    <lastmod>2025-05-18</lastmod>
+    <lastmod>2025-05-19</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://bulkvidcropper.com/privacy</loc>
-    <lastmod>2025-05-18</lastmod>
+    <lastmod>2025-05-19</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://bulkvidcropper.com/cookies</loc>
-    <lastmod>2025-05-18</lastmod>
+    <lastmod>2025-05-19</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -53,14 +65,26 @@
   <!-- Special Promo Landing Pages - Based on your discount system implementation -->
   <url>
     <loc>https://bulkvidcropper.com/auth?promo=SUMMER20</loc>
-    <lastmod>2025-05-18</lastmod>
+    <lastmod>2025-05-19</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://bulkvidcropper.com/auth?promo=PRO15</loc>
-    <lastmod>2025-05-18</lastmod>
+    <lastmod>2025-05-19</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://bulkvidcropper.com/auth?signup=true</loc>
+    <lastmod>2025-05-19</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://bulkvidcropper.com/auth?forgot=true</loc>
+    <lastmod>2025-05-19</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
   </url>
 </urlset>

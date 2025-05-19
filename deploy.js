@@ -69,10 +69,29 @@ function validateEnvironment() {
   // Check if .env.production exists
   if (!fs.existsSync(path.join(process.cwd(), '.env.production'))) {
     log('Missing .env.production file. Creating a default one...', 'warning');
-    fs.copyFileSync(
-      path.join(process.cwd(), '.env.local') || path.join(process.cwd(), '.env') || path.join(process.cwd(), '.env.example'),
-      path.join(process.cwd(), '.env.production')
-    );
+    
+    // Find the first existing env file to use as a template
+    let sourceEnvFile = null;
+    const possibleEnvFiles = ['.env.local', '.env', '.env.example'];
+    
+    for (const envFile of possibleEnvFiles) {
+      const envPath = path.join(process.cwd(), envFile);
+      if (fs.existsSync(envPath)) {
+        sourceEnvFile = envPath;
+        break;
+      }
+    }
+    
+    if (sourceEnvFile) {
+      fs.copyFileSync(
+        sourceEnvFile,
+        path.join(process.cwd(), '.env.production')
+      );
+      log(`Copied ${path.basename(sourceEnvFile)} to .env.production`, 'success');
+    } else {
+      log('No template env file found. Creating an empty .env.production file.', 'warning');
+      fs.writeFileSync(path.join(process.cwd(), '.env.production'), '# Production Environment Variables');
+    }
   }
   
   // Check Node.js version

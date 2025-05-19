@@ -1,14 +1,25 @@
-# Video Cropper MVP
+# Bulk Video Cropper MVP
 
-A simple web application for cropping videos for social media platforms.
+A powerful web application for cropping and processing videos for social media platforms. This is currently in MVP (Minimum Viable Product) release with premium features prepared but disabled for initial release.
 
-## Features
+## Current MVP Features
 
 - Upload videos for cropping
 - Adjust crop dimensions and position
 - Select from common aspect ratio presets (16:9, 9:16, 1:1, 4:5, etc.)
 - Process videos with a simple interface
 - Download cropped videos
+- User account creation and management
+- Enhanced user onboarding and workflow guidance
+- Basic usage analytics
+
+## Future Premium Features
+
+- Batch video processing (prepared but disabled in MVP)
+- Multiple output formats
+- Premium subscription options (prepared but disabled in MVP)
+- Advanced filters and effects
+- Cloud storage of processed videos
 
 ## Tech Stack
 
@@ -49,6 +60,64 @@ npm run dev
 # or
 yarn dev
 ```
+
+## Deployment
+
+### MVP Deployment
+
+The application is currently configured for MVP deployment with payments disabled. To deploy:
+
+1. Build the application:
+   ```bash
+   npm run build
+   # or
+   yarn build
+   ```
+
+2. Deploy the built application to your hosting provider. This application is compatible with Vercel, Netlify, or any other Next.js-compatible hosting service.
+
+   ```bash
+   # Example for Vercel
+   vercel --prod
+   ```
+
+### Required Environment Variables
+
+Make sure to set these environment variables on your hosting platform:
+
+```
+# Firebase Configuration - Required for authentication and database
+NEXT_PUBLIC_FIREBASE_API_KEY=your_firebase_api_key
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_firebase_auth_domain
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_firebase_project_id
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_firebase_storage_bucket
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_firebase_messaging_sender_id
+NEXT_PUBLIC_FIREBASE_APP_ID=your_firebase_app_id
+
+# Stripe Configuration - Can be added later when enabling payments
+# STRIPE_SECRET_KEY=your_stripe_secret_key
+# NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=your_stripe_publishable_key
+# STRIPE_WEBHOOK_SECRET=your_stripe_webhook_secret
+# STRIPE_PREMIUM_PRICE_ID=your_stripe_premium_price_id
+# STRIPE_PRO_PRICE_ID=your_stripe_pro_price_id
+```
+
+## Enabling Payments After MVP
+
+Payments are currently disabled for the MVP release. To enable payments in the future:
+
+1. Update the feature flag in `src/config/features.ts`:
+   ```typescript
+   export const FEATURES = {
+     // Change this to true to enable payments
+     ENABLE_PAYMENTS: true,
+     // Other feature flags...
+   };
+   ```
+
+2. Set up the required Stripe environment variables in your hosting platform.
+
+3. Test the payment flow thoroughly with Stripe test mode before enabling in production.
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 

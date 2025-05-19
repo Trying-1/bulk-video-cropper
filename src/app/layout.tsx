@@ -33,8 +33,14 @@ export const metadata: Metadata = {
   },
 }
 
-import { Providers } from './providers';
-import Navigation from '../components/Navigation';
+import { Providers } from '@/contexts/Providers';
+import ClientNavigation from '../components/ClientNavigation';
+import ErrorBoundary from '@/components/ErrorBoundary';
+
+// All guide popups removed as per user preference for clean interface without notifications
+// - QuickStart removed
+// - WorkflowGuide removed
+// - OnboardingGuide removed
 
 export default function RootLayout({
   children,
@@ -45,10 +51,16 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <Providers>
-          <Navigation />
-          <main className="min-h-screen bg-gray-50 dark:bg-gray-900 pt-0">
-            {children}
-          </main>
+          <ErrorBoundary>
+            {/* Hide navigation on admin pages */}
+            <ClientNavigation />
+            {/* All guide popups removed for cleaner user experience */}
+            <main className="min-h-screen bg-gray-50 dark:bg-gray-900 pt-0">
+              <ErrorBoundary>
+                {children}
+              </ErrorBoundary>
+            </main>
+          </ErrorBoundary>
         </Providers>
       </body>
     </html>

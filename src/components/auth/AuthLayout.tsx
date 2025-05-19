@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { signInUser, createUser } from '@/services/firebaseService';
+import { signInUser, createUser, resetPassword } from '@/services/firebaseService';
 import { User } from '@/types/user';
 import { createUser as createUserService } from '@/services/userService';
 import { auth } from '@/config/firebase';
@@ -10,6 +10,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { GoogleAuthProvider, signInWithRedirect, getRedirectResult } from 'firebase/auth';
 import { toast } from 'react-hot-toast';
+import { useAuth } from '@/contexts/AuthContext';
 
 // Google provider instance
 const googleProvider = new GoogleAuthProvider();
@@ -19,20 +20,40 @@ export default function AuthLayout() {
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
+  const [forgotPassword, setForgotPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { user } = useAuth();
 
   // Track if user came from free tier button
   const [isFromFreeTier, setIsFromFreeTier] = useState(false);
   
   useEffect(() => {
-    // Check URL parameters for source and signup status
+    // Check if user is already logged in, redirect them appropriately
+    if (user) {
+      // Get the return URL from query parameters or default to profile
+      const returnUrl = searchParams.get('returnUrl') || '/profile';
+      
+      // If the user just completed authentication, show a welcome message
+      toast.success('Welcome back!');
+      
+      // Redirect to the appropriate page
+      router.push(returnUrl);
+    }
+  }, [user, router, searchParams]);
+  
+  useEffect(() => {
+    // Check URL parameters for source, signup status, and forgot password
     const signupParam = searchParams.get('signup');
+    const forgotParam = searchParams.get('forgot');
     const sourceParam = searchParams.get('source');
     
-    if (signupParam === 'true') {
+    if (forgotParam === 'true') {
+      setForgotPassword(true);
+      setIsSignUp(false);
+    } else if (signupParam === 'true') {
       setIsSignUp(true);
     }
     
@@ -75,12 +96,44 @@ export default function AuthLayout() {
     checkRedirectResult();
   }, [router, searchParams]);
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    
+    try {
+      if (!email) {
+        setError('Please enter your email address');
+        return;
+      }
+      
+      const result = await resetPassword(email);
+      
+      if (result.success) {
+        toast.success('Password reset email sent. Please check your inbox.');
+        // Reset to sign in mode after successful password reset request
+        setForgotPassword(false);
+      } else {
+        setError(result.message);
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to send password reset email');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
-
+    
     try {
+      if (forgotPassword) {
+        await handleForgotPassword(e);
+        return;
+      }
+      
       if (isSignUp) {
         // First create Firebase auth user
         await createUser(email, password);
@@ -196,16 +249,20 @@ export default function AuthLayout() {
           </div>
           <div className="text-center">
             <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
-              {isSignUp ? 'Create your account' : 'Welcome back'}
+              {forgotPassword ? 'Reset your password' : isSignUp ? 'Create your account' : 'Welcome back'}
             </h2>
             <p className="mt-2 text-gray-600 dark:text-gray-300">
-              {isSignUp ? 'Start your video editing journey' : 'Sign in to continue to your profile'}
+              {forgotPassword 
+                ? 'Enter your email to receive a password reset link' 
+                : isSignUp 
+                  ? 'Start your video editing journey' 
+                  : 'Sign in to continue to your profile'}
             </p>
           </div>
 
           <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
             <div className="space-y-4">
-              {isSignUp && (
+              {isSignUp && !forgotPassword && (
                 <div>
                   <label htmlFor="username" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Username
@@ -238,32 +295,75 @@ export default function AuthLayout() {
                   onChange={(e) => setEmail(e.target.value)}
                 />
               </div>
-              <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Password
-                </label>
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  required
-                  className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-teal-500 focus:border-teal-500 focus:z-10 sm:text-sm"
-                  placeholder="Enter your password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-              </div>
+              {!forgotPassword && (
+                <div>
+                  <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Password
+                  </label>
+                  <input
+                    id="password"
+                    name="password"
+                    type="password"
+                    required={!forgotPassword}
+                    className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-teal-500 focus:border-teal-500 focus:z-10 sm:text-sm"
+                    placeholder="Enter your password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                </div>
+              )}
             </div>
 
-            {!isSignUp && (
+            {!isSignUp && !forgotPassword && (
               <div className="flex items-center justify-end">
                 <div className="text-sm">
-                  <a href="#" className="font-medium text-teal-600 hover:text-teal-500 dark:text-teal-400 dark:hover:text-teal-300">
+                  <button 
+                    type="button"
+                    onClick={() => setForgotPassword(true)}
+                    className="font-medium text-teal-600 hover:text-teal-500 dark:text-teal-400 dark:hover:text-teal-300"
+                  >
                     Forgot your password?
-                  </a>
+                  </button>
                 </div>
               </div>
             )}
+
+            <div className="mt-6 text-center">
+              {forgotPassword ? (
+                <p className="text-gray-600 dark:text-gray-300">
+                  Remember your password?{' '}
+                  <button
+                    type="button"
+                    onClick={() => setForgotPassword(false)}
+                    className="font-medium text-teal-600 hover:text-teal-500 dark:text-teal-400 dark:hover:text-teal-300"
+                  >
+                    Back to sign in
+                  </button>
+                </p>
+              ) : isSignUp ? (
+                <p className="text-gray-600 dark:text-gray-300">
+                  Already have an account?{' '}
+                  <button
+                    type="button"
+                    onClick={() => setIsSignUp(false)}
+                    className="font-medium text-teal-600 hover:text-teal-500 dark:text-teal-400 dark:hover:text-teal-300"
+                  >
+                    Sign in instead
+                  </button>
+                </p>
+              ) : (
+                <p className="text-gray-600 dark:text-gray-300">
+                  Don't have an account?{' '}
+                  <button
+                    type="button"
+                    onClick={() => setIsSignUp(true)}
+                    className="font-medium text-teal-600 hover:text-teal-500 dark:text-teal-400 dark:hover:text-teal-300"
+                  >
+                    Create an account
+                  </button>
+                </p>
+              )}
+            </div>
 
             {error && (
               <div className="text-sm text-red-600 dark:text-red-400 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
@@ -283,11 +383,9 @@ export default function AuthLayout() {
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
-                    {isSignUp ? 'Creating account...' : 'Signing in...'}
+                    Processing
                   </>
-                ) : (
-                  <>{isSignUp ? 'Create Account' : 'Sign In'}</>
-                )}
+                ) : forgotPassword ? 'Send Reset Link' : isSignUp ? 'Create Account' : 'Sign In'}
               </button>
             </div>
           </form>

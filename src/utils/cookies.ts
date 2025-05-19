@@ -28,18 +28,75 @@ export interface AppState {
   cachedUserData?: any; // Cached user profile data
   cachedRecentVideos?: any[]; // Cached recent videos
   cachedUserStats?: any; // Cached user stats
+  
+  // Workflow optimization properties
+  hasSeenOnboarding?: boolean; // Whether the user has seen the onboarding guide
+  onboardingShownAt?: string; // Timestamp when onboarding was shown
+  onboardingDismissed?: boolean; // Whether the user dismissed the onboarding
+  onboardingDismissedAt?: string; // Timestamp when onboarding was dismissed
+  quickStartShown?: boolean; // Whether the quick start guide was shown
+  lastInteraction?: string; // Timestamp of last user interaction
+  paymentPageVisited?: string; // Timestamp when payment page was visited
+  lastLogin?: string; // Timestamp of the user's last login
+  lastPaymentAttempt?: { // Details of the last payment attempt
+    plan: string;
+    timestamp: string;
+  };
+  
+  // Enhanced workflow tracking
+  workflowStage?: string; // Current stage in the user workflow
+  completedWorkflowActions?: string[]; // Actions the user has completed
+  workflowLastUpdated?: string; // When the workflow was last updated
+  videoUploads?: number; // Count of video uploads
+  videoProcesses?: number; // Count of videos processed
+  featureDiscovery?: { // Features the user has discovered and used
+    [feature: string]: {
+      discovered: boolean;
+      used: boolean;
+      firstUsedAt?: string;
+    };
+  };
 }
 
-// Generic cookie functions
-export const setCookie = (name: string, value: any, options: any = {}) => {
-  Cookies.set(name, value, {
-    expires: 7, // 7 days
-    ...options,
-  });
-};
+// Generic cookie functions with enhanced security and error handling
+export function setCookie(name: string, value: any, options: any = {}) {
+  try {
+    // Enhanced security options for cookies
+    const secureOptions = {
+      expires: 7, // 7 days default expiration
+      secure: window.location.protocol === 'https:', // Secure in production
+      sameSite: 'strict' as 'strict', // Prevent CSRF
+      ...options
+    };
+    
+    // Validate data before storing
+    if (value === undefined || value === null) {
+      console.warn(`Attempted to set cookie ${name} with null/undefined value`);
+      return;
+    }
+    
+    Cookies.set(name, JSON.stringify(value), secureOptions);
+  } catch (error) {
+    console.error(`Error setting cookie ${name}:`, error);
+    // Attempt to set a simpler version if JSON stringification fails
+    try {
+      const fallbackValue = typeof value === 'object' ? 
+        JSON.stringify({ error: 'Original data too complex', timestamp: Date.now() }) : 
+        String(value);
+      Cookies.set(name, fallbackValue, { expires: 1, ...options });
+    } catch (fallbackError) {
+      console.error(`Critical failure setting cookie ${name}:`, fallbackError);
+    }
+  }
+}
 
 export const getCookie = (name: string) => {
-  return Cookies.get(name);
+  try {
+    return Cookies.get(name);
+  } catch (error) {
+    console.error(`Error getting cookie ${name}:`, error);
+    return null;
+  }
 };
 
 export const removeCookie = (name: string) => {
@@ -65,8 +122,32 @@ export const setUserSessionCookie = (session: UserSession) => {
 };
 
 export const getUserSessionCookie = (): UserSession | null => {
-  const session = getCookie(COOKIE_USER_SESSION);
-  return session ? JSON.parse(session) : null;
+  try {
+    const cookie = getCookie(COOKIE_USER_SESSION);
+    if (!cookie) return null;
+    
+    const sessionData = JSON.parse(cookie);
+    
+    // Validate required session fields
+    if (!sessionData.uid || !sessionData.email) {
+      console.warn('Invalid session cookie found - missing required fields');
+      return null;
+    }
+    
+    // Check session expiration (7 days)
+    const SESSION_MAX_AGE = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
+    if (sessionData.lastLogin && Date.now() - sessionData.lastLogin > SESSION_MAX_AGE) {
+      console.log('Session expired, clearing cookie');
+      clearUserSessionCookie();
+      return null;
+    }
+    
+    return sessionData;
+  } catch (error) {
+    console.error('Error parsing user session cookie:', error);
+    clearUserSessionCookie(); // Clear invalid cookie
+    return null;
+  }
 };
 
 export const clearUserSessionCookie = () => {

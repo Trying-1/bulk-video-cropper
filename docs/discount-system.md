@@ -44,31 +44,102 @@ Access the discount management interface at `/admin/discounts` in your applicati
 
 ## Discount Configuration (Admin Interface)
 
+### Firestore Implementation
+
+The discount system is implemented using Firestore collections to allow for real-time updates without code deployments:
+
+```
+Firestore Collections:
+  - subscriptionPlans/
+      - premium/
+      - pro/
+      - free/
+  - promotionCodes/
+      - summer20/
+      - pro15/
+```
+
 ### Premium Plan Settings
 
 ```jsx
-// Premium Plan Discount Settings
+// Premium Plan in Firestore (subscriptionPlans/premium)
 {
-  active: true,                      // Toggle to enable/disable the discount
-  percentage: 20,                   // Discount percentage (SUMMER20)
-  originalPrice: 9.99,              // Original price (displayed with strikethrough)
-  discountedPrice: 7.99,            // Discounted price (prominently displayed)
-  endDate: new Date('2025-08-30'),  // When the promotion ends
-  promoCode: 'SUMMER20'             // Promotional code passed to auth system
+  name: 'Premium',
+  description: 'Professional video cropping for businesses',
+  features: [
+    'Everything in Pro',
+    'Unlimited video length',
+    '4K quality export',
+    'Advanced filters and effects',
+    'Cloud storage integration',
+    'Team accounts',
+    'API access'
+  ],
+  priceMonthly: 29.99,
+  priceYearly: 299.99,
+  currency: 'USD',
+  isActive: true,
+  trialDays: 14,
+  maxVideoStorage: 100,
+  maxProcessingHours: 50,
+  priority: 3,
+  hasPromotion: true,
+  promotionCode: 'SUMMER20',
+  discountPercentage: 20,
+  promotionExpiry: [Timestamp('2025-08-31')],
+  displayOriginalPrice: true,
 }
 ```
 
 ### Pro Plan Settings
 
 ```jsx
-// Pro Plan Discount Settings
+// Pro Plan in Firestore (subscriptionPlans/pro)
 {
-  active: false,                    // This discount is currently inactive
-  percentage: 15,
-  originalPrice: 29.99,
-  discountedPrice: 25.49,
-  endDate: new Date('2025-06-15'),
-  promoCode: 'PRO15'
+  name: 'Pro',
+  description: 'Enhanced features for content creators',
+  features: [
+    'Unlimited video crops',
+    '30 mins max video length',
+    'HD quality export',
+    'All aspect ratios',
+    'Batch processing',
+    'Priority processing'
+  ],
+  priceMonthly: 9.99,
+  priceYearly: 99.99,
+  currency: 'USD',
+  isActive: true,
+  trialDays: 7,
+  maxVideoStorage: 20,
+  maxProcessingHours: 10,
+  priority: 2,
+  hasPromotion: false,
+  promotionCode: 'PRO15',
+  discountPercentage: 15,
+  displayOriginalPrice: true,
+}
+```
+
+### Promotion Codes in Firestore
+
+```jsx
+// SUMMER20 Promotion in Firestore (promotionCodes/summer20)
+{
+  code: 'SUMMER20',
+  description: 'Summer promotion - 20% off Premium plan',
+  discountPercentage: 20,
+  currency: 'USD',
+  isActive: true,
+  applicablePlans: ['premium'],
+  startDate: [Timestamp('2025-05-01')],
+  endDate: [Timestamp('2025-08-31')],
+  maxUses: 1000,
+  currentUses: 0,
+  displayOnPricingPage: true,
+  promotionalText: 'Limited time offer - 20% off',
+  badgeText: '20% OFF',
+  badgeColor: '#ff6b6b',
 }
 ```
 
@@ -76,14 +147,17 @@ Access the discount management interface at `/admin/discounts` in your applicati
 
 ### Running a New Promotion
 
-1. Go to `/admin/discounts` in your application
-2. In the Premium or Pro plan section:
-   - Toggle "Active" to ON
-   - Set your desired discount percentage
-   - Enter original and discounted prices
-   - Set an end date for the promotion
-   - Create a promo code
-3. Click "Save Changes"
+1. Go to `/admin/subscriptions` in your application
+2. You can manage promotions in two ways:
+   - Through the Subscription Plans tab to edit plan-specific discounts
+   - Through the Promotion Codes tab to create and manage all promotions
+3. To create a new promotion:
+   - Enter a unique promotion code (e.g., SUMMER20)
+   - Set discount percentage and applicable plans
+   - Configure start and end dates
+   - Set maximum usage limits and visual styling
+   - Toggle "Active" status to make it live
+4. The changes are stored in Firestore and immediately reflected on the pricing page
 
 ### Ending a Promotion
 
@@ -99,6 +173,19 @@ Access the discount management interface at `/admin/discounts` in your applicati
 3. **Promo Codes**: Use clear, thematic codes (e.g., SUMMER20, BLACKFRIDAY)
 4. **Communication**: Use the promotional banner to highlight special offers
 5. **Testing**: Monitor conversion rates to optimize future promotions
+6. **Firestore Security**: Ensure your Firestore security rules protect promotion data
+7. **Admin Access**: Limit who can create and modify promotions
+8. **URL Parameters**: All promotion codes are automatically passed to the authentication page via URL parameters
+
+### Admin Dashboard Metrics
+
+The admin dashboard provides metrics to monitor promotion effectiveness:
+
+1. **Active Promotions**: Count of currently active promotions
+2. **Promotion Usage**: Track how many times each code has been used
+3. **Conversion Rate**: Percentage of users who subscribe after using a promo code
+4. **Revenue Impact**: Comparison of revenue with/without promotions
+5. **Plan Distribution**: How promotions affect the distribution across plans
 
 ## User Experience
 

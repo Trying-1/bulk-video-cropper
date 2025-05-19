@@ -1,5 +1,5 @@
 import { initializeApp, getApps } from 'firebase/app';
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail } from 'firebase/auth';
 import { getFirestore, collection, doc, setDoc, getDoc, updateDoc, getDocs, query, where } from 'firebase/firestore';
 import { User } from '../types/user';
 
@@ -128,4 +128,18 @@ export const onAuthStateChange = (callback: (user: User | null) => void) => {
       callback(null);
     }
   });
+};
+
+// Password reset function
+export const resetPassword = async (email: string) => {
+  try {
+    await sendPasswordResetEmail(auth, email);
+    return { success: true, message: 'Password reset email sent successfully' };
+  } catch (error: any) {
+    console.error('Password reset error:', error);
+    return { 
+      success: false, 
+      message: error.message || 'Failed to send password reset email. Please try again.'
+    };
+  }
 };

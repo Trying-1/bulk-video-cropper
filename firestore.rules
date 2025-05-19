@@ -1,21 +1,59 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Allow admin access for specific email addresses during initial setup
+    function isAdminByEmail() {
+      return request.auth != null && 
+        (request.auth.token.email == 'admin@bulkvidcropper.com' || 
+         request.auth.token.email == 'test@example.com');
+    }
+    
     // User profiles - users can read and write only their own data
     match /users/{userId} {
-      allow read: if request.auth != null && request.auth.uid == userId;
-      // Allow creation if the user is authenticated and creating their own document
+      allow read: if request.auth != null && (request.auth.uid == userId || isAdminByEmail());
       allow create: if request.auth != null && request.auth.uid == userId;
-      allow update: if request.auth != null && request.auth.uid == userId;
-      allow delete: if false; // Don't allow users to delete their profiles
+      allow update: if request.auth != null && (request.auth.uid == userId || isAdminByEmail());
+      allow delete: if isAdminByEmail();
     }
     
     // Temporary video metadata - users can only access their own videos
     match /temp-videos/{videoId} {
-      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow read: if request.auth != null && (resource.data.userId == request.auth.uid || isAdminByEmail());
       allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
-      allow update: if request.auth != null && resource.data.userId == request.auth.uid;
-      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow update: if request.auth != null && (resource.data.userId == request.auth.uid || isAdminByEmail());
+      allow delete: if request.auth != null && (resource.data.userId == request.auth.uid || isAdminByEmail());
+    }
+    
+    // Admin Users - During initial setup, admin emails can create admin users
+    match /adminUsers/{userId} {
+      allow read, write: if isAdminByEmail();
+    }
+    
+    // Admin Settings
+    match /admin/{document=**} {
+      allow read, write: if isAdminByEmail();
+    }
+    
+    // Subscription Plans - Readable by all, writable by admins
+    match /subscriptionPlans/{planId} {
+      allow read: if true; // Anyone can view subscription plans
+      allow write: if isAdminByEmail();
+    }
+    
+    // Promotion Codes - Readable by all, writable by admins
+    match /promotionCodes/{promoId} {
+      allow read: if true; // Anyone can view active promotion codes
+      allow write: if isAdminByEmail();
+    }
+    
+    // System Metrics
+    match /adminMetrics/{document=**} {
+      allow read, write: if isAdminByEmail();
+    }
+    
+    // Daily User Activity
+    match /dailyActivity/{document=**} {
+      allow read, write: if isAdminByEmail();
     }
     
     // Default deny all other access

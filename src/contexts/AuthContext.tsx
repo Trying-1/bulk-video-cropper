@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/config/firebase';
-import { onAuthChange, UserProfile } from '@/services/auth';
+import { UserProfile } from '@/services/auth';
 import { getUserData } from '@/services/userService';
 import { getUserSessionCookie, setUserSessionCookie, clearUserSessionCookie, updateAppStateCookie } from '@/utils/cookies';
 
@@ -48,16 +48,17 @@ const createSubscriptionFromUserData = (userData: any): Subscription | null => {
   
   const plan = userData.subscription?.toLowerCase() || 'free';
   let price = 0;
+  let videoLimit = 10;
+  let storageLimit = 1024 * 1024 * 100; // 100MB for free plan
   
-  switch (plan) {
-    case 'premium':
-      price = 9.99;
-      break;
-    case 'pro':
-      price = 29.99;
-      break;
-    default: // free
-      price = 0;
+  if (plan === 'premium') {
+    price = 9.99;
+    videoLimit = 100;
+    storageLimit = 1024 * 1024 * 1024 * 2; // 2GB for premium
+  } else if (plan === 'pro') {
+    price = 19.99;
+    videoLimit = 500;
+    storageLimit = 1024 * 1024 * 1024 * 10; // 10GB for pro
   }
   
   return {
@@ -65,139 +66,145 @@ const createSubscriptionFromUserData = (userData: any): Subscription | null => {
       name: plan,
       price: price
     },
-    status: 'active',
+    status: userData.subscriptionStatus || 'active',
     nextBillingDate: userData.nextRenewal || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
     usage: {
-      videosProcessed: userData.usedQuota || 0,
-      videoLimit: plan === 'pro' ? 120 : plan === 'premium' ? 40 : 5,
-      storageUsed: 0,
-      storageLimit: plan === 'pro' ? 10240 : plan === 'premium' ? 2048 : 500 // Storage limits in MB
+      videosProcessed: userData.videosProcessed || 0,
+      videoLimit: videoLimit,
+      storageUsed: userData.storageUsed || 0,
+      storageLimit: storageLimit
     }
   };
 };
 
-export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Initialize auth state
+  // Initialize auth state and check for session cookies
   useEffect(() => {
-    const initializeAuth = async () => {
-      setLoading(true);
-      
-      // First check if we have a session cookie
+    // Check for session cookie first for immediate UI response
+    try {
       const sessionCookie = getUserSessionCookie();
-      
-      if (sessionCookie) {
-        // If we have a session cookie, use it to set initial state
-        setUserProfile({
+      if (sessionCookie && sessionCookie.uid && sessionCookie.email) {
+        console.log('Found session cookie, using cached data while Firebase initializes');
+        const tempProfile: UserProfile = {
           uid: sessionCookie.uid,
           email: sessionCookie.email,
-          displayName: sessionCookie.displayName || '',
+          displayName: sessionCookie.displayName || sessionCookie.email.split('@')[0],
           photoURL: sessionCookie.photoURL || ''
+        };
+        setUserProfile(tempProfile);
+      }
+    } catch (error) {
+      console.error('Error reading session cookie:', error);
+      clearUserSessionCookie(); // Clear potentially corrupted cookie
+    }
+
+    // Set up Firebase auth state listener with retry logic
+    let retryCount = 0;
+    const maxRetries = 3;
+    
+    const setupAuthListener = () => {
+      try {
+        const unsubscribe = onAuthStateChanged(auth, async (authUser) => {
+          if (authUser) {
+            // User is signed in
+            console.log('Firebase auth state: signed in', authUser.uid);
+            setUser(authUser);
+            
+            // Save session to cookie with appropriate security flags
+            const sessionData = {
+              uid: authUser.uid,
+              email: authUser.email || '',
+              displayName: authUser.displayName || authUser.email?.split('@')[0] || '',
+              photoURL: authUser.photoURL || '',
+              lastLogin: Date.now()
+            };
+            setUserSessionCookie(sessionData);
+            
+            try {
+              // Fetch additional user data with timeout
+              const fetchTimeout = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('User data fetch timeout')), 5000)
+              );
+              const userDataPromise = getUserData(authUser.uid);
+              const userData = await Promise.race([userDataPromise, fetchTimeout]);
+              
+              // Create profile with data validation
+              const profile: UserProfile = {
+                uid: authUser.uid,
+                email: authUser.email || '',
+                displayName: authUser.displayName || authUser.email?.split('@')[0] || '',
+                photoURL: authUser.photoURL || ''
+              };
+              
+              setUserProfile(profile);
+              setSubscription(createSubscriptionFromUserData(userData));
+              
+              // Update app state
+              updateAppStateCookie({
+                lastLogin: new Date().toISOString(),
+                authStatus: 'authenticated'
+              });
+            } catch (error) {
+              console.error('Error fetching user data:', error);
+              // Set basic profile data even if additional data fetch fails
+              const fallbackProfile: UserProfile = {
+                uid: authUser.uid,
+                email: authUser.email || '',
+                displayName: authUser.displayName || '',
+                photoURL: authUser.photoURL || ''
+              };
+              setUserProfile(fallbackProfile);
+            }
+          } else {
+            // No Firebase user
+            console.log('Firebase auth state: signed out');
+            
+            // Check for session cookie before clearing user state
+            const sessionCookie = getUserSessionCookie();
+            if (!sessionCookie) {
+              // No cookie and no Firebase user - definitely logged out
+              setUser(null);
+              setUserProfile(null);
+              setSubscription(null);
+            } else {
+              // We have a cookie but Firebase says logged out
+              // This can happen during page refresh or initialization
+              console.log('Session cookie exists but Firebase reports logged out');
+              // Keep the session data from cookie until Firebase finishes initializing
+            }
+          }
+          
+          // Auth state checked
+          setLoading(false);
         });
         
-        // We still need to check with Firebase to confirm the cookie is valid
-        const authUser = auth.currentUser;
-        if (authUser && authUser.uid === sessionCookie.uid) {
-          setUser(authUser);
-          // Fetch user data to get subscription information
-          try {
-            const userData = await getUserData(authUser.uid);
-            console.log('User data from Firestore:', userData);
-            
-            if (userData) {
-              // Transform the user data into a subscription object
-              const subscriptionData = createSubscriptionFromUserData(userData);
-              console.log('Created subscription data:', subscriptionData);
-              setSubscription(subscriptionData);
-            }
-          } catch (error) {
-            console.error('Error fetching subscription:', error);
-          }
+        return unsubscribe;
+      } catch (error) {
+        console.error('Error setting up auth listener:', error);
+        if (retryCount < maxRetries) {
+          retryCount++;
+          console.log(`Retrying auth listener setup (${retryCount}/${maxRetries})...`);
+          setTimeout(setupAuthListener, 1000 * retryCount);
         } else {
-          // Cookie is invalid or expired
-          clearUserSessionCookie();
-          setUser(null);
-          setUserProfile(null);
+          console.error('Max retries reached for auth listener');
+          setLoading(false);
         }
-      } else {
-        // Check if user is already logged in
-        const authUser = auth.currentUser;
-        if (authUser) {
-          setUser(authUser);
-          setUserProfile({
-            uid: authUser.uid,
-            email: authUser.email || '',
-            displayName: authUser.displayName || '',
-            photoURL: authUser.photoURL || ''
-          });
-          
-          // Store in cookie for future page loads
-          setUserSessionCookie({
-            uid: authUser.uid,
-            email: authUser.email || '',
-            displayName: authUser.displayName || '',
-            photoURL: authUser.photoURL || '',
-            lastLogin: Date.now()
-          });
-        } else {
-          setUser(null);
-          setUserProfile(null);
-        }
+        return () => {};
       }
-      
-      setLoading(false);
     };
 
-    initializeAuth();
-  }, []);
-
-  // Listen for auth state changes
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (authUser) => {
-      setLoading(true);
-      if (authUser) {
-        setUser(authUser);
-        const profileData = {
-          uid: authUser.uid,
-          email: authUser.email || '',
-          displayName: authUser.displayName || '',
-          photoURL: authUser.photoURL || ''
-        };
-        setUserProfile(profileData);
-        
-        // Update cookie whenever auth state changes
-        setUserSessionCookie({
-          ...profileData,
-          lastLogin: Date.now()
-        });
-        
-        // Fetch user data to update subscription
-        getUserData(authUser.uid).then(userData => {
-          if (userData) {
-            const subscriptionData = createSubscriptionFromUserData(userData);
-            setSubscription(subscriptionData);
-          }
-        }).catch(error => {
-          console.error('Error fetching user data on auth change:', error);
-        });
-        
-        // Save current page in app state
-        updateAppStateCookie({
-          lastVisitedPage: window.location.pathname
-        });
-      } else {
-        setUser(null);
-        setUserProfile(null);
-        clearUserSessionCookie();
-      }
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
+    // Start the authentication listener
+    const unsubscribe = setupAuthListener();
+    
+    // Cleanup listener on component unmount
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   return (

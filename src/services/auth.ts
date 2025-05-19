@@ -52,8 +52,8 @@ export const signIn = async (email: string, password: string): Promise<User> => 
     
     // Check if we're already logged in and came from the landing page
     if (user && window.location.pathname === '/auth') {
-      // Redirect to editor instead of profile
-      window.location.href = '/editor';
+      // Redirect to profile page
+      window.location.href = '/profile';
     }
     
     return user;

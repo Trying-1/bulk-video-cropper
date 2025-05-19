@@ -84,7 +84,10 @@ const Navbar: React.FC = () => {
                         id="user-menu-button"
                         aria-expanded={isDropdownOpen}
                         aria-haspopup="true"
-                        onClick={handleDropdownToggle}
+                        onClick={() => {
+                          // Navigate directly to profile page
+                          window.location.href = '/profile';
+                        }}
                       >
                         <span className="sr-only">Open user menu</span>
                         <div className="h-8 w-8 rounded-full bg-teal-500 flex items-center justify-center text-white">
@@ -115,16 +118,15 @@ const Navbar: React.FC = () => {
                           href="/profile"
                           className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
                           role="menuitem"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            window.location.href = '/profile';
+                            setIsDropdownOpen(false);
+                          }}
                         >
                           Your Profile
                         </Link>
-                        <Link
-                          href="/dashboard"
-                          className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
-                          role="menuitem"
-                        >
-                          Dashboard
-                        </Link>
+                        {/* Dashboard removed as requested */}
                         <Link
                           href="/editor"
                           className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -225,12 +227,7 @@ const Navbar: React.FC = () => {
                 >
                   Your Profile
                 </Link>
-                <Link
-                  href="/dashboard"
-                  className="text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 block px-3 py-2 rounded-md text-base font-medium"
-                >
-                  Dashboard
-                </Link>
+                {/* Dashboard link removed as requested */}
                 <Link
                   href="/editor"
                   className="text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 block px-3 py-2 rounded-md text-base font-medium"

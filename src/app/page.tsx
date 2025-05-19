@@ -4,13 +4,18 @@ import Link from "next/link";
 import Image from "next/image";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import Navbar from '@/components/Navbar';
 import { getUserSessionCookie, updateAppStateCookie, getAppStateCookie } from '@/utils/cookies';
+import { useComingSoon } from "@/components/ComingSoonModal";
+import { isFeatureEnabled } from "@/config/features";
 
 export default function Home() {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const { user, loading } = useAuth();
+  const { showComingSoon, ComingSoonModal } = useComingSoon();
+  
+  // Check if payments are enabled
+  const paymentsEnabled = isFeatureEnabled('ENABLE_PAYMENTS');
   
   useEffect(() => {
     // Check cookies first for faster initial render
@@ -36,6 +41,8 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-orange-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 overflow-hidden relative">
+      {/* Coming Soon Modal Component - Only show when triggered */}
+      <ComingSoonModal />
       {/* Background decoration elements */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
         <div className="absolute top-20 left-10 w-64 h-64 bg-gradient-to-br from-teal-300 to-teal-400 rounded-full filter blur-3xl opacity-20 animate-blob"></div>
@@ -45,8 +52,8 @@ export default function Home() {
         <div className="hidden md:block absolute top-1/4 -left-10 w-20 h-20 bg-orange-500 opacity-30 rounded-lg transform -rotate-12"></div>
       </div>
       
-      <Navbar />
-      <main className="pt-16 relative z-10">
+      {/* Removed duplicate Navbar - using global navigation from Layout */}
+      <main className="relative z-10">
         <section className="relative py-20">
           <div className="container mx-auto px-4">
             <div className="max-w-4xl mx-auto text-center">
@@ -259,12 +266,21 @@ export default function Home() {
                     Small watermark
                   </li>
                 </ul>
-                <Link
-                  href="/auth?source=free"
+                <button
+                  onClick={() => {
+                    const user = localStorage.getItem('user');
+                    if (user) {
+                      // User is logged in, go to plans
+                      window.location.href = '/plans?plan=free';
+                    } else {
+                      // User is not logged in, go to auth with returnUrl
+                      window.location.href = '/auth?source=free&returnUrl=/plans?plan=free';
+                    }
+                  }}
                   className="block w-full py-3 px-4 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-center text-gray-700 dark:text-white font-medium rounded-lg transition-colors"
                 >
                   Get Started Free
-                </Link>
+                </button>
               </div>
 
               {/* Premium Plan */}
@@ -311,12 +327,30 @@ export default function Home() {
                     <strong>Priority support</strong>
                   </li>
                 </ul>
-                <Link
-                  href="/auth"
+                <button
+                  onClick={() => {
+                    if (!paymentsEnabled) {
+                      // Show the cool ComingSoon modal instead of redirecting
+                      showComingSoon({
+                        featureName: 'Premium Plan',
+                        description: 'The Premium plan is coming soon! We\'re currently finalizing our payment system and premium features. You can continue using our free plan in the meantime.'
+                      });
+                      return;
+                    }
+                    
+                    const user = localStorage.getItem('user');
+                    if (user) {
+                      // User is logged in, go directly to payment
+                      window.location.href = '/payment?plan=premium';
+                    } else {
+                      // User is not logged in, go to auth with returnUrl
+                      window.location.href = '/auth?returnUrl=/payment?plan=premium';
+                    }
+                  }}
                   className="block w-full py-3 px-4 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-center text-white font-medium rounded-lg transition-colors shadow-md"
                 >
                   Upgrade to Premium
-                </Link>
+                </button>
               </div>
 
               {/* Pro Plan */}
@@ -360,12 +394,30 @@ export default function Home() {
                     <strong>24/7 dedicated support</strong>
                   </li>
                 </ul>
-                <Link
-                  href="/auth"
+                <button
+                  onClick={() => {
+                    if (!paymentsEnabled) {
+                      // Show the cool ComingSoon modal instead of redirecting
+                      showComingSoon({
+                        featureName: 'Pro Plan',
+                        description: 'The Pro plan is coming soon! We\'re currently finalizing our payment system and advanced pro features. You can continue using our free plan in the meantime.'
+                      });
+                      return;
+                    }
+                    
+                    const user = localStorage.getItem('user');
+                    if (user) {
+                      // User is logged in, go directly to payment
+                      window.location.href = '/payment?plan=pro';
+                    } else {
+                      // User is not logged in, go to auth with returnUrl
+                      window.location.href = '/auth?returnUrl=/payment?plan=pro';
+                    }
+                  }}
                   className="block w-full py-3 px-4 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-center text-white font-medium rounded-lg transition-colors shadow-md"
                 >
                   Upgrade to Pro
-                </Link>
+                </button>
               </div>
             </div>
           </div>

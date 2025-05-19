@@ -39,7 +39,7 @@ const AuthRedirectHandler = () => {
           
           // Wait a moment before redirecting
           setTimeout(() => {
-            window.location.href = '/editor';
+            window.location.href = '/profile';
           }, 1000);
         }
       } catch (error) {

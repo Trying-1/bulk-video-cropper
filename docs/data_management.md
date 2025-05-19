@@ -255,6 +255,52 @@ This document outlines the data management strategy for the Bulk Video Cropper w
    - Consent records
    - Impact assessments
 
+## Admin Data Structure
+
+### Admin Collections in Firestore
+
+1. **Admin Settings**
+   - Collection: `admin/settings`
+   - Contains global application configuration
+   - Includes limits, features, and system-wide parameters
+   - Accessible only to authenticated admin users
+
+2. **Admin Users**
+   - Collection: `adminUsers`
+   - Stores users with administrative privileges
+   - Contains roles, permissions, and access levels
+   - Default super_admin has complete system access
+
+3. **Subscription Plans**
+   - Collection: `subscriptionPlans`
+   - Defines pricing tiers (Free, Pro, Premium)
+   - Includes features, limits, and pricing for each plan
+   - Supports active/inactive status for each plan
+
+4. **Promotion Codes**
+   - Collection: `promotionCodes`
+   - Manages discount promotions (SUMMER20, PRO15)
+   - Tracks usage, limits, and expiration dates
+   - Controls which plans receive discounts
+
+5. **System Metrics**
+   - Collection: `adminMetrics`
+   - Tracks application performance and usage
+   - Historical data for dashboard visualization
+   - Aggregated user activity statistics
+
+### Admin Security Model
+
+1. **Role-Based Access Control**
+   - Super admin role with all permissions
+   - Specific permission sets for different admin functions
+   - Email-based verification for admin initialization
+
+2. **Firestore Security Rules**
+   - Collection-level security restrictions
+   - Admin-only collections protected from regular users
+   - Granular permission checks for sensitive operations
+
 ## Implementation Considerations
 
 ### Technical Implementation
@@ -265,6 +311,7 @@ This document outlines the data management strategy for the Bulk Video Cropper w
    - Storage service
    - Analytics service
    - User management service
+   - Admin dashboard service
 
 2. **Scalability Approach**
    - Horizontal scaling for processing workers

@@ -19,12 +19,56 @@ Offer 20-25% discount for annual subscriptions to improve cash flow and reduce c
 - Professional: $191.88/year ($15.99/month equivalent)
 - Enterprise: $479.88/year ($39.99/month equivalent)
 
-### Implementation Tips
-- Use a reliable payment processor like Stripe or PayPal
-- Implement automated billing reminders and receipts
-- Create a self-service portal for plan changes
-- Set up dunning management for failed payments
-- Track subscription metrics (MRR, churn, LTV)
+### Implementation Status
+
+✅ **Implemented Features:**
+- Subscription plans defined in Firestore (`subscriptionPlans` collection)
+- Promotional codes system with discounts (`promotionCodes` collection)
+- Admin dashboard for managing plans and promotions
+- Dynamic pricing displays with original and discounted prices
+- Visual elements (badges, timers) for active promotions
+
+⏳ **Planned Implementation:**
+- Integration with payment processor (Stripe recommended)
+- Automated billing reminders and receipts
+- Self-service portal for plan changes
+- Dunning management for failed payments
+- Subscription metrics tracking (MRR, churn, LTV)
+
+## Promotional Strategies
+
+### Active Promotions in Firestore
+- **SUMMER20**: 20% off Premium plan, active through August 31, 2025
+  - Implemented in `promotionCodes/summer20` document
+  - Displays promotional badge and countdown timer
+  - Automatically passed to authentication via URL parameters
+
+### Ready for Implementation
+- **PRO15**: 15% off Pro plan, configured but currently inactive
+  - Can be activated through admin dashboard without code changes
+  - Will display on pricing page when toggled active
+
+### Additional Planned Offers
+- Free 7-day trial for Premium and Pro plans
+- First month at 50% off for annual subscriptions
+- Extend trial period for users who complete onboarding tasks
+
+## Pricing Page Implementation
+
+### Implemented Features
+- ✅ Dynamic pricing display with strikethrough for original prices
+- ✅ Promotional badges for discounted plans (e.g., "20% OFF")
+- ✅ Countdown timers for limited-time offers
+- ✅ Feature comparison table for all subscription tiers
+- ✅ Highlighted "Most Popular" plan (Premium with SUMMER20 discount)
+- ✅ Monthly and yearly pricing options
+
+### Admin Management
+- All pricing display elements controlled through admin dashboard
+- Changes to promotions reflected instantly on the pricing page
+- Promotion activation/deactivation without code deployment
+- Configurable promotional badges, colors, and messaging
+- Automatic expiration based on set end dates
 
 ## One-Time Purchases
 
