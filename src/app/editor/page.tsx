@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+// This prevents static generation errors with useSearchParams
+export const dynamic = 'force-dynamic';
+import { useState, useRef, useEffect, Suspense } from "react";
 import { setEditorSettingsCookie, getEditorSettingsCookie, DEFAULT_EDITOR_SETTINGS, EditorSettings } from "@/utils/cookies";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { useAuth } from '@/contexts/AuthContext';
@@ -255,11 +257,12 @@ export default function EditorPage() {
   const handleAspectRatioChange = (ratio: string) => {
     setAspectRatio(ratio);
     
-    // Save to cookie
+    // Save to cookie for persistence
     const currentSettings = getEditorSettingsCookie() || DEFAULT_EDITOR_SETTINGS;
     setEditorSettingsCookie({
-      ...currentSettings,
-      aspectRatio: ratio
+      aspectRatio: ratio,
+      useCurrentCropForAll: currentSettings.useCurrentCropForAll,
+      lastUploadDirectory: currentSettings.lastUploadDirectory
     });
   };
   
@@ -267,40 +270,30 @@ export default function EditorPage() {
     const newValue = e.target.checked;
     setUseCurrentCropForAll(newValue);
     
-    // Save to cookie
-    const currentSettings = getEditorSettingsCookie() || DEFAULT_EDITOR_SETTINGS;
-    setEditorSettingsCookie({
-      ...currentSettings,
-      useCurrentCropForAll: newValue
-    });
-    
-    if (!currentVideo) return;
-    
-    // Update crop settings based on aspect ratio
-    const [width, height] = aspectRatio.split(":").map(Number);
-    const aspectRatioValue = width / height;
-    
-    // Set a reasonable size based on the aspect ratio
-    let newWidth = 300;
-    let newHeight = Math.round(newWidth / aspectRatioValue);
-    
-    // If height would be too large, adjust width instead
-    if (newHeight > 200) {
-      newHeight = 200;
-      newWidth = Math.round(newHeight * aspectRatioValue);
+    // If turning on and we have a current video with crop settings, apply to all
+    if (newValue && currentVideo) {
+      const { cropSettings } = currentVideo;
+      
+      // Only apply if crop settings have been adjusted (not default 0,0,0,0)
+      if (cropSettings.width > 0 && cropSettings.height > 0) {
+        setVideos(prev => prev.map(video => {
+          // Skip the current video as it already has these settings
+          if (video.id === currentVideoId) return video;
+          
+          return {
+            ...video,
+            cropSettings: { ...cropSettings }
+          };
+        }));
+      }
     }
     
-    // Center the crop area in the container
-    const containerWidth = videoContainerRef.current?.clientWidth || 640;
-    const containerHeight = videoContainerRef.current?.clientHeight || 360;
-    const x = Math.max(0, Math.floor((containerWidth - newWidth) / 2));
-    const y = Math.max(0, Math.floor((containerHeight - newHeight) / 2));
-    
-    handleCropChange({
-      x,
-      y,
-      width: newWidth,
-      height: newHeight
+    // Save to cookie for persistence
+    const currentSettings = getEditorSettingsCookie() || DEFAULT_EDITOR_SETTINGS;
+    setEditorSettingsCookie({
+      aspectRatio: currentSettings.aspectRatio,
+      useCurrentCropForAll: newValue,
+      lastUploadDirectory: currentSettings.lastUploadDirectory
     });
   };
   
@@ -651,7 +644,7 @@ export default function EditorPage() {
           videosToProcessWithSettings,
           (progress, currentVideo, justCompletedVideo) => {
             // Update progress state
-            setProcessingProgress(progress);
+            setProcessingProgress(Math.round(progress * 100));
             setCurrentProcessingVideo(currentVideo);
             
             // If a video was just completed, update the UI immediately

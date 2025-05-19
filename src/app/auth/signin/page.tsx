@@ -8,6 +8,7 @@ import { signIn, signInWithGoogle } from '@/services/auth';
 const SignInPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [acceptTerms, setAcceptTerms] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -16,6 +17,12 @@ const SignInPage: React.FC = () => {
     e.preventDefault();
     setError(null);
     setLoading(true);
+
+    if (!acceptTerms) {
+      setError('You must accept the Terms of Service and Privacy Policy to continue');
+      setLoading(false);
+      return;
+    }
 
     try {
       await signIn(email, password);
@@ -42,6 +49,12 @@ const SignInPage: React.FC = () => {
     setError(null);
     setLoading(true);
 
+    if (!acceptTerms) {
+      setError('You must accept the Terms of Service and Privacy Policy to continue');
+      setLoading(false);
+      return;
+    }
+    
     try {
       // Authenticate with Google and create user profile
       const user = await signInWithGoogle();
@@ -134,6 +147,27 @@ const SignInPage: React.FC = () => {
               <Link href="/auth/reset-password" className="font-medium text-teal-600 hover:text-teal-500 dark:text-teal-400 dark:hover:text-teal-300">
                 Forgot your password?
               </Link>
+            </div>
+          </div>
+
+          <div className="flex items-start mt-6 p-4 border border-gray-300 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-800">
+            <div className="flex items-center h-6">
+              <input
+                id="terms"
+                name="terms"
+                type="checkbox"
+                checked={acceptTerms}
+                onChange={(e) => setAcceptTerms(e.target.checked)}
+                className="focus:ring-teal-500 h-5 w-5 text-teal-600 border-2 border-gray-400 dark:border-gray-600 rounded"
+                required
+              />
+            </div>
+            <div className="ml-3 text-sm">
+              <label htmlFor="terms" className="font-bold text-gray-800 dark:text-gray-200">
+                I accept the 
+                <Link href="/legal/terms" className="text-teal-600 hover:text-teal-500 dark:text-teal-400 dark:hover:text-teal-300 underline"> Terms of Service</Link> and 
+                <Link href="/legal/privacy" className="text-teal-600 hover:text-teal-500 dark:text-teal-400 dark:hover:text-teal-300 underline"> Privacy Policy</Link>
+              </label>
             </div>
           </div>
 

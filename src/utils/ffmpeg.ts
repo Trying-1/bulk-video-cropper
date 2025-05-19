@@ -1,5 +1,5 @@
 import { FFmpeg } from '@ffmpeg/ffmpeg';
-import { fetchFile, toBlobURL } from '@ffmpeg/util';
+import { fetchFile } from '@ffmpeg/util';
 
 // Global cancellation flag
 let isCancelled = false;
@@ -19,25 +19,78 @@ export const resetCancellation = () => {
 };
 
 let ffmpeg: FFmpeg | null = null;
+let isLoading = false;
+let loadPromise: Promise<FFmpeg> | null = null;
 
 /**
- * Load and initialize FFmpeg
+ * Load and initialize FFmpeg with improved error handling and retry logic
  */
 export const loadFFmpeg = async (): Promise<FFmpeg> => {
-  if (ffmpeg) {
+  // If already loaded, return the instance
+  if (ffmpeg?.loaded) {
     return ffmpeg;
   }
+  
+  // If loading is in progress, return the existing promise
+  if (isLoading && loadPromise) {
+    return loadPromise;
+  }
 
-  ffmpeg = new FFmpeg();
+  // Begin loading process
+  isLoading = true;
+  loadPromise = (async () => {
+    try {
+      console.log('Initializing FFmpeg...');
+      ffmpeg = new FFmpeg();
 
-  // Load FFmpeg core
-  const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.2/dist/umd';
-  await ffmpeg.load({
-    coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
-    wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
-  });
+      // Most compatible loading approach - using CDN without toBlobURL
+      try {
+        console.log('Loading FFmpeg using simple configuration...');
+        
+        // Try loading with no parameters first - this often works
+        await ffmpeg.load();
+        
+        // Fallback loading method
+        if (!ffmpeg.loaded) {
+          console.log('Default loading failed, using CDN fallback...');
+          
+          // First fallback - unpkg
+          try {
+            await ffmpeg.load({
+              coreURL: 'https://unpkg.com/@ffmpeg/core@0.12.2/dist/umd/ffmpeg-core.js',
+              wasmURL: 'https://unpkg.com/@ffmpeg/core@0.12.2/dist/umd/ffmpeg-core.wasm',
+            });
+          } catch (fallbackError) {
+            console.log('First fallback failed, trying jsDelivr CDN...');
+            
+            // Second fallback - jsDelivr (more reliable alternative CDN)
+            await ffmpeg.load({
+              coreURL: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.2/dist/umd/ffmpeg-core.js',
+              wasmURL: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.2/dist/umd/ffmpeg-core.wasm',
+            });
+          }
+        }
+        
+        console.log('FFmpeg loaded successfully');
+      } catch (error) {
+        console.error('Error loading FFmpeg:', error);
+        // Handle specific loading errors
+        throw new Error(`Failed to load FFmpeg: ${error instanceof Error ? error.message : 'Unknown error'}`); 
+      }
 
-  return ffmpeg;
+      return ffmpeg;
+    } catch (error) {
+      // Reset state on failure to allow retries
+      ffmpeg = null;
+      isLoading = false;
+      loadPromise = null;
+      throw error;
+    } finally {
+      isLoading = false;
+    }
+  })();
+
+  return loadPromise;
 };
 
 /**
@@ -112,35 +165,40 @@ export const cropVideo = async (
   containerDimensions: { width: number, height: number } = { width: 640, height: 360 }
 ): Promise<Blob> => {
   try {
+    if (!ffmpeg) {
+      console.log('FFmpeg not loaded yet, loading now...');
+    }
+    
+    // Ensure FFmpeg is loaded
+    const ffmpegInstance = await loadFFmpeg();
+    
+    if (!ffmpegInstance.loaded) {
+      throw new Error('FFmpeg failed to load properly');
+    }
+    
+    console.log('FFmpeg is ready, beginning video processing...');
+    
     // Check if crop settings are valid
     if (cropSettings.width <= 0 || cropSettings.height <= 0) {
       throw new Error('Invalid crop dimensions: width and height must be greater than 0');
     }
     
-    // Load FFmpeg
-    const ffmpegInstance = await loadFFmpeg();
-    
-    // Get actual video dimensions
+    // Calculate actual crop parameters based on container and video dimensions
     const videoDimensions = await getVideoDimensions(videoFile);
-    
-    // Calculate crop parameters
-    const { x, y, width, height } = calculateCropParameters(
-      cropSettings,
-      videoDimensions,
-      containerDimensions
-    );
+    const cropParams = calculateCropParameters(cropSettings, videoDimensions, containerDimensions);
     
     // Validate crop parameters
-    if (width <= 0 || height <= 0 || x < 0 || y < 0 || 
-        x + width > videoDimensions.width || y + height > videoDimensions.height) {
+    if (cropParams.width <= 0 || cropParams.height <= 0 || cropParams.x < 0 || cropParams.y < 0 || 
+        cropParams.x + cropParams.width > videoDimensions.width || cropParams.y + cropParams.height > videoDimensions.height) {
       throw new Error('Invalid crop parameters: crop area is outside video boundaries');
     }
     
-    // Generate unique input and output file names with timestamp and random string
-    const timestamp = Date.now();
-    const randomStr = Math.random().toString(36).substring(2, 10);
-    const inputFileName = `input-${timestamp}-${randomStr}.mp4`;
-    const outputFileName = `output-${timestamp}-${randomStr}.mp4`;
+    console.log(`Processing ${videoFile.name} (${Math.round(videoFile.size / 1024)}KB)`);
+    console.log(`Crop parameters: x=${cropParams.x}, y=${cropParams.y}, w=${cropParams.width}, h=${cropParams.height}`);
+    
+    // Generate unique input and output file names with timestamp
+    const inputFileName = `input-${Date.now()}.${videoFile.name.split('.').pop()}`;
+    const outputFileName = `output-${Date.now()}.mp4`;
     
     // Write the input file to memory
     await ffmpegInstance.writeFile(inputFileName, await fetchFile(videoFile));
@@ -155,7 +213,7 @@ export const cropVideo = async (
     // Build FFmpeg command for cropping with optimized settings for speed
     const ffmpegArgs = [
       '-i', inputFileName,
-      '-vf', `crop=${width}:${height}:${x}:${y}`,
+      '-vf', `crop=${cropParams.width}:${cropParams.height}:${cropParams.x}:${cropParams.y}`,
       '-c:v', 'libx264',
       '-preset', 'ultrafast',  // Use ultrafast preset for maximum speed
       '-crf', '28'             // Use a higher CRF value for faster processing
@@ -176,19 +234,17 @@ export const cropVideo = async (
     }
     
     // Read the output file
+    console.log('Processing complete, reading output file...');
     const data = await ffmpegInstance.readFile(outputFileName);
     
     // Clean up files
-    try {
-      await ffmpegInstance.deleteFile(inputFileName);
-      await ffmpegInstance.deleteFile(outputFileName);
-    } catch (cleanupError) {
-      console.warn('Error cleaning up temporary files:', cleanupError);
-      // Continue despite cleanup errors
-    }
+    await ffmpegInstance.deleteFile(inputFileName);
+    await ffmpegInstance.deleteFile(outputFileName);
     
-    // Convert to Blob
-    return new Blob([data], { type: 'video/mp4' });
+    // Convert to blob
+    const outputBlob = new Blob([data], { type: 'video/mp4' });
+    console.log(`Output video size: ${Math.round(outputBlob.size / 1024)}KB`);
+    return outputBlob;
   } catch (error) {
     console.error('Error cropping video:', error);
     throw error;

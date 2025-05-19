@@ -4,7 +4,6 @@ import { headers } from 'next/headers';
 import { DatabaseService } from '@/services/databaseService';
 import Stripe from 'stripe';
 import { SubscriptionTier } from '@/models/User';
-import { buffer } from 'micro';
 
 /**
  * Handle subscription events from Stripe
@@ -144,12 +143,10 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription) {
 /**
  * Next.js doesn't allow raw body access by default, so we need to configure it
  * to skip body parsing for our webhook route
+ * Using the new route segment config format for Next.js 14+
  */
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 /**
  * Process Stripe webhook events

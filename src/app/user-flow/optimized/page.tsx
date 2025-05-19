@@ -86,7 +86,7 @@ export default function OptimizedUserFlowPage() {
   // Get recommended flow based on user state
   const getRecommendedFlow = () => {
     if (!user) return 'new-user';
-    if (subscription && subscription.level !== 'free') return 'premium';
+    if (subscription && subscription.plan?.name !== 'free') return 'premium';       
     return 'returning-free';
   };
 
@@ -100,7 +100,7 @@ export default function OptimizedUserFlowPage() {
       };
     }
     
-    if (subscription && subscription.level === 'free') {
+    if (subscription && subscription.plan?.name === 'free') {
       return {
         label: 'Upgrade Now',
         path: '/plans',

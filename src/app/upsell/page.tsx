@@ -27,7 +27,7 @@ export default function UpsellPage() {
     });
     
     // If user is already premium, redirect to editor
-    if (subscription && subscription.level !== 'free') {
+    if (subscription && subscription.plan?.name !== 'free') {
       router.push('/editor');
     }
   }, [subscription, router]);

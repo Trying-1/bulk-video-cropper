@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -18,7 +18,7 @@ export default function LegalSideNav() {
       {/* Toggle button for mobile */}
       <button 
         onClick={toggleVisibility}
-        className="md:hidden bg-teal-500 text-white p-2 rounded-r-lg shadow-lg"
+        className="md:hidden bg-blue-600 text-white p-2 rounded-r-lg shadow-lg"
         aria-label="Toggle legal navigation"
       >
         {isVisible ? (
@@ -35,43 +35,43 @@ export default function LegalSideNav() {
       {/* Side navigation */}
       <div className={`${isVisible ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 bg-white dark:bg-gray-800 shadow-xl rounded-r-lg overflow-hidden`}>
         <div className="p-4">
-          <h3 className="text-sm font-bold uppercase text-gray-500 dark:text-gray-400 mb-3">Legal & Info</h3>
           <nav className="flex flex-col space-y-1">
             <Link 
-              href="/privacy" 
+              href="/legal/privacy" 
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                pathname === '/privacy' 
-                  ? 'bg-teal-500 text-white' 
+                pathname === '/legal/privacy' 
+                  ? 'bg-blue-600 text-white' 
                   : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
               }`}
             >
               Privacy Policy
             </Link>
             <Link 
-              href="/terms" 
+              href="/legal/terms" 
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                pathname === '/terms' 
-                  ? 'bg-teal-500 text-white' 
+                pathname === '/legal/terms' 
+                  ? 'bg-blue-600 text-white' 
                   : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
               }`}
             >
               Terms of Service
             </Link>
             <Link 
-              href="/cookies" 
+              href="/legal/cookies" 
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                pathname === '/cookies' 
-                  ? 'bg-teal-500 text-white' 
+                pathname === '/legal/cookies' 
+                  ? 'bg-blue-600 text-white' 
                   : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
               }`}
             >
               Cookie Policy
             </Link>
+            <div className="my-2 border-t border-gray-200 dark:border-gray-700"></div>
             <Link 
               href="/about" 
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 pathname === '/about' 
-                  ? 'bg-teal-500 text-white' 
+                  ? 'bg-blue-600 text-white' 
                   : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
               }`}
             >
@@ -81,7 +81,7 @@ export default function LegalSideNav() {
               href="/contact" 
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 pathname === '/contact' 
-                  ? 'bg-teal-500 text-white' 
+                  ? 'bg-blue-600 text-white' 
                   : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
               }`}
             >

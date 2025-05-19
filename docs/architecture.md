@@ -12,9 +12,58 @@ The Bulk Video Cropper is a web-based application built using Next.js and React,
 - **Authentication**: Firebase Auth (Optional)
 - **Styling**: Tailwind CSS
 
+## Configuration Architecture
+
+The application uses a centralized configuration system to improve maintainability and consistency. All configuration files are located in the `src/config/` directory.
+
+### 1. Configuration Components
+
+#### Branding Configuration (`/src/config/branding.ts`)
+- App identity elements (name, slogan, description)
+- Logo paths and image assets
+- Social media profile links
+- Contact information
+- Copyright and legal information
+- Brand colors
+
+#### Subscription Plans (`/src/config/subscriptionPlans.ts`)
+- Subscription tier details (Free, Premium, Pro)
+- Pricing and billing information
+- Feature lists for each plan
+- Video limits (count, duration, size) by plan
+
+#### Feature Flags (`/src/config/features.ts`)
+- Toggle switches for enabling/disabling functionality
+- Environment-specific feature configuration
+- Helper function for checking feature status
+
+#### Messages (`/src/config/messages.ts`)
+- Centralized error messages
+- Success notifications
+- UI text elements
+- Helper function for formatting error messages
+
+#### API Endpoints (`/src/config/apiEndpoints.ts`)
+- Centralized API endpoint definitions
+- Helper functions for building API URLs
+- Environment-specific API configuration
+
+#### App Constants (`/src/config/appConstants.ts`)
+- Application-wide constants and settings
+- Cookie settings and storage configurations
+- Cache durations
+- File upload limits
+- UI settings
+- Environment-aware constants
+
+#### Environment Variables (`/src/config/env.ts`)
+- Type-safe environment variable access
+- Default values for optional variables
+- Helper functions for retrieving environment values
+
 ## Component Architecture
 
-### 1. Core Components
+### 2. Core Components
 
 #### Editor Page (`/src/app/editor/page.tsx`)
 - Main application interface
@@ -94,20 +143,33 @@ The Bulk Video Cropper is a web-based application built using Next.js and React,
 - **Session Storage**: For preserving state between page reloads
 - **Firestore**: For user data, subscription status, and usage tracking
 
-## Authentication & User Management
+## Authentication & Security Architecture
 
-#### AuthContext
-- User authentication state
-- Login/Logout management 
-- Session persistence
-- Subscription data management
-- Limit enforcement based on subscription tier
+### Authentication
+- Optional Firebase Authentication integration with secure fallback mechanisms
+- Role-based access control with server-side validation
+- Secure session management with enhanced cookie protection
 
-#### User Dashboard
-- Account management
-- Usage statistics
-- Subscription management
-- Plan-based limits display
+### Data Security
+- Comprehensive file validation and sanitization to prevent attacks
+- Input sanitization and validation for XSS prevention
+- CSRF protection with token-based validation
+- Secure local storage with encryption for client-side data
+
+### Subscription Security
+- Server-side subscription validation to prevent feature manipulation
+- Secure feature access verification with API endpoints
+- Non-intrusive premium feature management (no popups)
+
+### API Security
+- Rate limiting to prevent abuse and brute force attacks
+- Request validation and sanitization
+- Secure error handling to prevent information disclosure
+
+### Infrastructure Security
+- Comprehensive Content Security Policy implementation
+- Security headers for protection against common web vulnerabilities
+- Security monitoring and logging for suspicious activities
 
 ## Security Considerations
 
@@ -173,3 +235,30 @@ The Bulk Video Cropper is a web-based application built using Next.js and React,
    - Regular memory profiling
    - Performance testing
    - Optimization based on usage patterns
+
+## File Structure
+
+```
+/src
+  /app             # Next.js 14 app router components
+    /api           # API routes with security protection
+  /components      # Reusable React components
+  /config          # Application configuration
+  /contexts        # React context providers
+  /hooks           # Custom React hooks
+    /useSecureFeature.ts    # Secure feature validation hook
+    /useSecureSubscription.ts # Secure subscription hook
+  /lib             # Third-party library integrations
+  /middleware      # Application middleware for security
+  /types           # TypeScript type definitions
+  /utils           # Utility functions
+    /clientSecurity.ts      # Client-side security utilities
+    /csrfProtection.ts      # CSRF protection utilities
+    /envValidation.ts       # Environment variable validation
+    /fileValidation.ts      # Secure file validation
+    /rateLimiter.ts         # API rate limiting
+    /secureErrorHandling.ts # Secure error handling
+    /secureStorage.ts       # Encrypted local storage
+    /securityMonitoring.ts  # Security event monitoring
+    /serverFeatureValidation.ts # Server-side feature validation
+    /subscriptionValidator.ts   # Subscription validation

@@ -106,7 +106,7 @@ export default function SubscriptionManagementPage() {
     };
     
     // Only fetch if user is authenticated and subscribed
-    if (user && subscription && subscription.level !== 'free') {
+    if (user && subscription && subscription.plan?.name !== 'free') {
       fetchSubscriptionDetails();
     } else if (user) {
       // Redirect free users to upgrade page

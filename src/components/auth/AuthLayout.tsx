@@ -18,7 +18,10 @@ const googleProvider = new GoogleAuthProvider();
 export default function AuthLayout() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordStrength, setPasswordStrength] = useState(0);
   const [username, setUsername] = useState('');
+  const [acceptTerms, setAcceptTerms] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [forgotPassword, setForgotPassword] = useState(false);
   const [error, setError] = useState('');
@@ -123,9 +126,47 @@ export default function AuthLayout() {
     }
   };
 
+  // Calculate password strength (0-4)
+  const calculatePasswordStrength = (pass: string): number => {
+    let strength = 0;
+    
+    if (pass.length >= 8) strength++;
+    if (/[A-Z]/.test(pass)) strength++;
+    if (/[0-9]/.test(pass)) strength++;
+    if (/[^A-Za-z0-9]/.test(pass)) strength++;
+    
+    return strength;
+  };
+  
+  // Handle password change and update strength
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newPassword = e.target.value;
+    setPassword(newPassword);
+    setPasswordStrength(calculatePasswordStrength(newPassword));
+  };
+  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    
+    // Check if terms are accepted for sign up or sign in
+    if (!acceptTerms && !forgotPassword) {
+      setError('You must accept the Terms of Service and Privacy Policy to continue');
+      return;
+    }
+    
+    // Check if passwords match for signup
+    if (isSignUp && password !== confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+    
+    // Check password strength for signup
+    if (isSignUp && passwordStrength < 2) {
+      setError('Please use a stronger password');
+      return;
+    }
+    
     setLoading(true);
     
     try {
@@ -308,8 +349,48 @@ export default function AuthLayout() {
                     className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-teal-500 focus:border-teal-500 focus:z-10 sm:text-sm"
                     placeholder="Enter your password"
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={handlePasswordChange}
                   />
+                  {isSignUp && (
+                    <div className="mt-1">
+                      <div className="flex items-center space-x-1 mb-1">
+                        <div className={`h-1 flex-1 rounded-full ${passwordStrength >= 1 ? 'bg-red-500' : 'bg-gray-200'}`}></div>
+                        <div className={`h-1 flex-1 rounded-full ${passwordStrength >= 2 ? 'bg-yellow-500' : 'bg-gray-200'}`}></div>
+                        <div className={`h-1 flex-1 rounded-full ${passwordStrength >= 3 ? 'bg-green-400' : 'bg-gray-200'}`}></div>
+                        <div className={`h-1 flex-1 rounded-full ${passwordStrength >= 4 ? 'bg-green-600' : 'bg-gray-200'}`}></div>
+                      </div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {passwordStrength === 0 && 'Enter a password'}
+                        {passwordStrength === 1 && 'Weak - Use at least 8 characters with letters, numbers, and symbols'}
+                        {passwordStrength === 2 && 'Fair - Add more characters or symbols'}
+                        {passwordStrength === 3 && 'Good - Password is strong'}
+                        {passwordStrength === 4 && 'Excellent - Password is very strong'}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              {isSignUp && !forgotPassword && (
+                <div>
+                  <label htmlFor="confirm-password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Confirm Password
+                  </label>
+                  <input
+                    id="confirm-password"
+                    name="confirm-password"
+                    type="password"
+                    required
+                    className={`appearance-none rounded-md relative block w-full px-3 py-2 border ${confirmPassword && password !== confirmPassword ? 'border-red-300 text-red-900 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 text-gray-900 focus:ring-teal-500 focus:border-teal-500'} placeholder-gray-500 focus:outline-none focus:z-10 sm:text-sm`}
+                    placeholder="Confirm your password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                  />
+                  {confirmPassword && password !== confirmPassword && (
+                    <p className="mt-1 text-xs text-red-600 dark:text-red-400">
+                      Passwords do not match
+                    </p>
+                  )}
                 </div>
               )}
             </div>
@@ -324,6 +405,29 @@ export default function AuthLayout() {
                   >
                     Forgot your password?
                   </button>
+                </div>
+              </div>
+            )}
+
+            {!forgotPassword && (
+              <div className="flex items-start mt-6 p-4 border border-gray-300 rounded-md bg-gray-50">
+                <div className="flex items-center h-6">
+                  <input
+                    id="terms"
+                    name="terms"
+                    type="checkbox"
+                    checked={acceptTerms}
+                    onChange={(e) => setAcceptTerms(e.target.checked)}
+                    className="focus:ring-teal-500 h-5 w-5 text-teal-600 border-2 border-gray-400 rounded"
+                    required
+                  />
+                </div>
+                <div className="ml-3 text-sm">
+                  <label htmlFor="terms" className="font-bold text-gray-800">
+                    I accept the 
+                    <Link href="/legal/terms" className="text-teal-600 hover:text-teal-500 underline"> Terms of Service</Link> and 
+                    <Link href="/legal/privacy" className="text-teal-600 hover:text-teal-500 underline"> Privacy Policy</Link>
+                  </label>
                 </div>
               </div>
             )}
@@ -374,8 +478,8 @@ export default function AuthLayout() {
             <div>
               <button
                 type="submit"
-                disabled={loading}
-                className={`w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-base font-medium text-white bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 transition-all ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
+                disabled={loading || (!forgotPassword && !acceptTerms)}
+                className={`w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-base font-medium text-white bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 transition-all ${(loading || (!forgotPassword && !acceptTerms)) ? 'opacity-70 cursor-not-allowed' : ''}`}
               >
                 {loading ? (
                   <>
@@ -405,9 +509,9 @@ export default function AuthLayout() {
             <div className="mt-6">
               <button 
                 onClick={handleGoogleSignIn}
-                disabled
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-400 dark:text-gray-500 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 cursor-not-allowed"
-                title="Google sign-in is temporarily unavailable"
+                disabled={!acceptTerms || forgotPassword}
+                className={`w-full flex items-center justify-center gap-2 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium ${!acceptTerms || forgotPassword ? 'text-gray-400 dark:text-gray-500 cursor-not-allowed' : 'text-gray-700 dark:text-gray-300'} bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500`}
+                title={!acceptTerms ? 'Please accept the Terms of Service and Privacy Policy' : forgotPassword ? 'Not available for password reset' : ''}
               >
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>

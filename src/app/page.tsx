@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { getUserSessionCookie, updateAppStateCookie, getAppStateCookie } from '@/utils/cookies';
 import { useComingSoon } from "@/components/ComingSoonModal";
 import { isFeatureEnabled } from "@/config/features";
+import { APP_IDENTITY, SOCIAL_MEDIA, CONTACT_INFO, LEGAL_DOCS } from "@/config/branding";
 
 export default function Home() {
   const [isLoaded, setIsLoaded] = useState(false);
@@ -507,22 +508,22 @@ export default function Home() {
           <div className="container mx-auto px-4">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
               <div>
-                <h3 className="text-white text-lg font-semibold mb-4">Bulk Video Cropper</h3>
+                <h3 className="text-white text-lg font-semibold mb-4">{APP_IDENTITY.name}</h3>
                 <p className="mb-4">
-                  Intelligent video cropping for content creators and marketers. Transform your video workflow with our AI-powered tools.
+                  {APP_IDENTITY.description}
                 </p>
                 <div className="flex space-x-4 mt-4">
-                  <Link href="https://twitter.com/bulkvidcropper" className="text-gray-400 hover:text-teal-400 transition-colors">
+                  <Link href={SOCIAL_MEDIA.twitter.url} className="text-gray-400 hover:text-teal-400 transition-colors">
                     <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M23 3a10.9 10.9 0 01-3.14 1.53 4.48 4.48 0 00-7.86 3v1A10.66 10.66 0 013 4s-4 9 5 13a11.64 11.64 0 01-7 2c9 5 20 0 20-11.5a4.5 4.5 0 00-.08-.83A7.72 7.72 0 0023 3z" />
                     </svg>
                   </Link>
-                  <Link href="https://linkedin.com/company/bulkvidcropper" className="text-gray-400 hover:text-teal-400 transition-colors">
+                  <Link href={SOCIAL_MEDIA.linkedin.url} className="text-gray-400 hover:text-teal-400 transition-colors">
                     <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16.5 6a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zm0 9a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zm0 6a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0" />
                     </svg>
                   </Link>
-                  <Link href="https://instagram.com/bulkvidcropper" className="text-gray-400 hover:text-teal-400 transition-colors">
+                  <Link href={SOCIAL_MEDIA.instagram.url} className="text-gray-400 hover:text-teal-400 transition-colors">
                     <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 21.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -574,17 +575,17 @@ export default function Home() {
                 <h4 className="text-white text-md font-semibold mb-4">Legal</h4>
                 <ul className="space-y-2">
                   <li>
-                    <Link href="/privacy" className="hover:text-teal-400 transition-colors">
+                    <Link href={LEGAL_DOCS.privacyPolicy} className="hover:text-teal-400 transition-colors">
                       Privacy Policy
                     </Link>
                   </li>
                   <li>
-                    <Link href="/terms" className="hover:text-teal-400 transition-colors">
+                    <Link href={LEGAL_DOCS.termsOfService} className="hover:text-teal-400 transition-colors">
                       Terms of Service
                     </Link>
                   </li>
                   <li>
-                    <Link href="/cookies" className="hover:text-teal-400 transition-colors">
+                    <Link href={LEGAL_DOCS.cookiePolicy} className="hover:text-teal-400 transition-colors">
                       Cookie Policy
                     </Link>
                   </li>
@@ -593,7 +594,7 @@ export default function Home() {
             </div>
             <div className="border-t border-gray-800 mt-8 pt-8 text-center">
               <p className="text-sm">
-                &copy; {new Date().getFullYear()} Bulk Video Cropper. All rights reserved.
+                {APP_IDENTITY.copyright}
               </p>
               <p className="mt-2 text-xs">
                 Currently offering a 20% discount on Premium plans with code SUMMER20

@@ -44,7 +44,7 @@ export default function AboutPage() {
                 Bulk Video Cropper was born from a simple realization: social media creators spend too much time reformatting videos for different platforms. What started as a personal project to solve this problem quickly grew into a comprehensive solution used by content creators worldwide.
               </p>
               <p className="text-2xl text-gray-800 dark:text-gray-100 mb-6">
-                Founded in 2022, we've grown from a small team with a big idea to a platform that processes thousands of videos daily. Our journey has been defined by a relentless focus on making advanced video editing accessible to everyone, regardless of technical expertise.
+                Founded in 2025, we've grown from a small team with a big idea to a platform that processes thousands of videos daily. Our journey has been defined by a relentless focus on making advanced video editing accessible to everyone, regardless of technical expertise.
               </p>
               <p className="text-2xl text-gray-800 dark:text-gray-100 mb-6">
                 Today, Bulk Video Cropper combines powerful AI-driven video analysis with intuitive batch processing capabilities, allowing creators to transform their content for any platform in just a few clicks.

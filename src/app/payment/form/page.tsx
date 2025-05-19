@@ -1,11 +1,20 @@
-import { useState } from 'react';
-import { CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
+'use client';
+
+// Prevent static generation errors with Stripe Elements
+export const dynamic = 'force-dynamic';
+
+import { useState, Suspense } from 'react';
+import { CardElement, useStripe, useElements, Elements } from '@stripe/react-stripe-js';
+import { loadStripe } from '@stripe/stripe-js';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
 
-export default function PaymentFormPage() {
+// Load Stripe outside of component to avoid recreating it on each render
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '');
+
+function PaymentForm() {
   const stripe = useStripe();
   const elements = useElements();
   const router = useRouter();
@@ -94,5 +103,18 @@ export default function PaymentFormPage() {
         </form>
       </Card>
     </div>
+  );
+}
+
+// Wrapper component to provide Stripe Elements context
+export default function PaymentFormPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">
+      <div className="animate-spin h-12 w-12 border-4 border-teal-500 border-t-transparent rounded-full"></div>
+    </div>}>
+      <Elements stripe={stripePromise}>
+        <PaymentForm />
+      </Elements>
+    </Suspense>
   );
 }

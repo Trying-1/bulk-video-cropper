@@ -1,26 +1,8 @@
-// Define video count limits by subscription plan
-export const SUBSCRIPTION_VIDEO_LIMITS = {
-  FREE: 5,
-  PREMIUM: 40,
-  PRO: 120,
-  DEFAULT: 10 // Fallback for unknown plans or no subscription
-};
-
-// Define video duration limits (in seconds) by subscription plan
-export const SUBSCRIPTION_DURATION_LIMITS = {
-  FREE: 30, // 1 minute
-  PREMIUM: 60, // 5 minutes
-  PRO: 180, // 30 minutes
-  DEFAULT: 20 // Fallback for unknown plans or no subscription
-};
-
-// Define video size limits (in MB) by subscription plan
-export const SUBSCRIPTION_SIZE_LIMITS = {
-  FREE: 100, // 100 MB
-  PREMIUM: 100, // 500 MB
-  PRO: 100, // 2 GB
-  DEFAULT: 100 // Fallback for unknown plans or no subscription
-};
+import { 
+  SUBSCRIPTION_VIDEO_LIMITS,
+  SUBSCRIPTION_DURATION_LIMITS,
+  SUBSCRIPTION_SIZE_LIMITS 
+} from '@/config/subscriptionPlans';
 
 /**
  * Gets the plan name from a subscription object

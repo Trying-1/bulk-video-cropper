@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { toast } from 'react-hot-toast';
 import { useComingSoon } from '@/components/ComingSoonModal';
 import { isFeatureEnabled } from '@/config/features';
+import { getAllPlans } from '@/config/subscriptionPlans';
 
 export default function PlansPage() {
   const router = useRouter();
@@ -80,68 +81,13 @@ export default function PlansPage() {
     return price.toFixed(2);
   };
 
-  const plans = [
-    {
-      id: 'free',
-      name: 'Free',
-      price: 0,
-      billing: 'Free forever',
-      description: 'Perfect for casual users who want to try out our service.',
-      features: [
-        '5 videos per month',
-        'Basic video cropping',
-        'Standard quality output',
-        'Community support'
-      ],
-      limitations: [
-        'Watermark on videos',
-        'Limited resolution',
-        'No batch processing'
-      ],
-      cta: 'Get Started',
-      popular: false
-    },
-    {
-      id: 'premium',
-      name: 'Premium',
-      price: 9.99,
-      billing: 'monthly',
-      description: 'Ideal for content creators who need more flexibility and features.',
-      features: [
-        'Unlimited videos',
-        'Premium video cropping',
-        'HD quality output',
-        'Priority support',
-        'No watermarks',
-        'Custom presets'
-      ],
-      limitations: [
-        'Limited batch processing (10 videos)',
-        'Standard export formats only'
-      ],
-      cta: 'Choose Premium',
-      popular: true
-    },
-    {
-      id: 'pro',
-      name: 'Pro',
-      price: 29.99,
-      billing: 'monthly',
-      description: 'For professional creators who need the full power of our platform.',
-      features: [
-        'Everything in Premium',
-        'Unlimited batch processing',
-        '4K quality output',
-        'All export formats',
-        'Advanced filters',
-        'API access',
-        'Dedicated support'
-      ],
-      limitations: [],
-      cta: 'Choose Pro',
-      popular: false
-    }
-  ];
+  // Get plans from centralized configuration
+  const plans = getAllPlans().map(plan => ({
+    ...plan,
+    // Convert PlanFeature[] to string[] for display
+    features: plan.features.map(feature => feature.text),
+    limitations: plan.limitations.map(limitation => limitation.text)
+  }));
 
   // Function to handle selecting a plan
   const handleSelectPlan = (planId: string) => {

@@ -1,12 +1,15 @@
 'use client';
 
-import { useEffect } from 'react';
+// Prevent static generation errors with useSearchParams
+export const dynamic = 'force-dynamic';
+
+import { useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import StreamlinedPaymentFlow from '@/components/StreamlinedPaymentFlow';
 import { updateAppStateCookie } from '@/utils/cookies';
 
-export default function PaymentPage() {
+function PaymentContent() {
   const searchParams = useSearchParams();
   const returnUrl = searchParams.get('returnUrl') || '/editor';
   const { user } = useAuth();
@@ -99,5 +102,15 @@ export default function PaymentPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function PaymentPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">
+      <div className="animate-spin h-12 w-12 border-4 border-teal-500 border-t-transparent rounded-full"></div>
+    </div>}>
+      <PaymentContent />
+    </Suspense>
   );
 }

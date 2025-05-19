@@ -36,6 +36,13 @@ export const metadata: Metadata = {
 import { Providers } from '@/contexts/Providers';
 import ClientNavigation from '../components/ClientNavigation';
 import ErrorBoundary from '@/components/ErrorBoundary';
+import dynamic from 'next/dynamic';
+
+// Dynamically import CookieConsent with no SSR to avoid hydration mismatch
+// since it uses localStorage which is only available in the browser
+const CookieConsent = dynamic(() => import('@/components/CookieConsent'), {
+  ssr: false,
+});
 
 // All guide popups removed as per user preference for clean interface without notifications
 // - QuickStart removed
@@ -60,6 +67,8 @@ export default function RootLayout({
                 {children}
               </ErrorBoundary>
             </main>
+            {/* Cookie consent banner for first-time visitors */}
+            <CookieConsent />
           </ErrorBoundary>
         </Providers>
       </body>

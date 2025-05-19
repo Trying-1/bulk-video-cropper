@@ -55,6 +55,86 @@ This guide outlines the process of transforming the Bulk Video Cropper desktop a
 - **CI/CD**: GitHub Actions or GitLab CI
 - **Monitoring**: Datadog or New Relic
 
+## Configuration Architecture
+
+To improve maintainability and ensure consistency across the application, the Bulk Video Cropper uses a centralized configuration system. All configuration files are located in the `src/config/` directory.
+
+### Configuration Components
+
+1. **Branding Configuration** (`/src/config/branding.ts`)
+   - App identity elements (name, slogan, description)
+   - Logo paths and image assets
+   - Social media profile links
+   - Contact information
+   - Legal document references
+   - Brand colors
+
+2. **Subscription Plans** (`/src/config/subscriptionPlans.ts`)
+   - Subscription tier details (Free, Premium, Pro)
+   - Pricing and billing information
+   - Feature lists for each plan
+   - Video limits by plan (count, duration, size)
+
+3. **Feature Flags** (`/src/config/features.ts`)
+   - Toggle switches for enabling/disabling functionality
+   - Environment-specific feature configuration
+   - Helper functions for checking feature status
+
+4. **Messages and UI Text** (`/src/config/messages.ts`)
+   - Error messages
+   - Success notifications
+   - UI text elements
+   - Formatting functions
+
+5. **API Endpoints** (`/src/config/apiEndpoints.ts`)
+   - Centralized API endpoint definitions
+   - Helper functions for building API URLs
+
+6. **App Constants** (`/src/config/appConstants.ts`)
+   - Application-wide constants
+   - Cookie settings
+   - Cache durations
+   - File upload limits
+   - UI settings
+
+7. **Environment Variables** (`/src/config/env.ts`)
+   - Type-safe environment variable access
+   - Default values
+
+### Benefits of Centralized Configuration
+
+- **Single Source of Truth**: All configuration values exist in one place
+- **Easy Maintenance**: Update values in one location instead of throughout the codebase
+- **Consistency**: Ensures consistent naming and values across components
+- **Type Safety**: TypeScript interfaces define the structure of configuration objects
+- **Developer Experience**: Clear organization and documentation of configuration values
+
+### Usage Example
+
+```typescript
+// Before: Hardcoded values
+function Footer() {
+  return (
+    <footer>
+      <p>&copy; {new Date().getFullYear()} Bulk Video Cropper. All rights reserved.</p>
+      <SocialLinks />
+    </footer>
+  );
+}
+
+// After: Using centralized configuration
+import { APP_IDENTITY, SOCIAL_MEDIA } from '@/config/branding';
+
+function Footer() {
+  return (
+    <footer>
+      <p>{APP_IDENTITY.copyright}</p>
+      <SocialLinks links={SOCIAL_MEDIA} />
+    </footer>
+  );
+}
+```
+
 ## Core Features
 
 ### MVP (Minimum Viable Product)

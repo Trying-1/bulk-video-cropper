@@ -28,6 +28,7 @@ export interface AppState {
   cachedUserData?: any; // Cached user profile data
   cachedRecentVideos?: any[]; // Cached recent videos
   cachedUserStats?: any; // Cached user stats
+  authStatus?: 'authenticated' | 'unauthenticated'; // User authentication status
   
   // Workflow optimization properties
   hasSeenOnboarding?: boolean; // Whether the user has seen the onboarding guide
@@ -164,9 +165,9 @@ export const getAppStateCookie = (): AppState | null => {
   return state ? JSON.parse(state) : null;
 };
 
-export const updateAppStateCookie = (partialState: Partial<AppState>) => {
+export const updateAppStateCookie = (partialState: any) => {
   const currentState = getAppStateCookie() || {};
-  setAppStateCookie({ ...currentState, ...partialState });
+  setAppStateCookie({ ...currentState, ...partialState } as AppState);
 };
 
 // Default values

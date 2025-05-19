@@ -146,7 +146,7 @@ export const getCurrentUser = (): User | null => {
 };
 
 // Listen for auth state changes and return current auth state
-export const onAuthChange = (callback?: (user: User | null) => void): User | null => {
+export const onAuthChange = (callback?: (user: User | null) => void): User | null | (() => void) => {
   // Get current auth state immediately
   const authUser = auth.currentUser;
   

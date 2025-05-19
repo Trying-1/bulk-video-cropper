@@ -9,6 +9,7 @@ const SignUpPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
+  const [acceptTerms, setAcceptTerms] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -20,6 +21,12 @@ const SignUpPage: React.FC = () => {
 
     if (password.length < 6) {
       setError('Password must be at least 6 characters');
+      setLoading(false);
+      return;
+    }
+
+    if (!acceptTerms) {
+      setError('You must accept the Terms of Service and Privacy Policy to create an account');
       setLoading(false);
       return;
     }
@@ -151,11 +158,28 @@ const SignUpPage: React.FC = () => {
             </div>
           </div>
 
-          <div>
-            <p className="text-xs text-gray-500 dark:text-gray-400">
-              By signing up, you agree to our Terms of Service and Privacy Policy regarding temporary video storage.
-              Your videos will be deleted after processing is complete.
-            </p>
+          <div className="flex items-start mt-6 p-4 border border-gray-300 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-800">
+            <div className="flex items-center h-6">
+              <input
+                id="terms"
+                name="terms"
+                type="checkbox"
+                checked={acceptTerms}
+                onChange={(e) => setAcceptTerms(e.target.checked)}
+                className="focus:ring-teal-500 h-5 w-5 text-teal-600 border-2 border-gray-400 dark:border-gray-600 rounded"
+                required
+              />
+            </div>
+            <div className="ml-3 text-sm">
+              <label htmlFor="terms" className="font-bold text-gray-800 dark:text-gray-200">
+                I accept the 
+                <Link href="/legal/terms" className="text-teal-600 hover:text-teal-500 dark:text-teal-400 dark:hover:text-teal-300 underline"> Terms of Service</Link> and 
+                <Link href="/legal/privacy" className="text-teal-600 hover:text-teal-500 dark:text-teal-400 dark:hover:text-teal-300 underline"> Privacy Policy</Link>
+              </label>
+              <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                Your videos will be processed securely and deleted after processing is complete.
+              </p>
+            </div>
           </div>
 
           <div>

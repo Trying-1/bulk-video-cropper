@@ -1,3 +1,6 @@
+
+'use client';
+
 import { useRouter } from 'next/navigation';
 import { CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';

@@ -143,6 +143,47 @@ yarn start
 - `src/app/editor/page.tsx` - Video editor page with cropping functionality
 - `src/app/globals.css` - Global styles using Tailwind CSS
 
+## Configuration Architecture
+
+The application uses a centralized configuration approach to improve maintainability and consistency. All configuration files are located in the `src/config/` directory:
+
+### Core Configuration Files
+
+- `branding.ts` - App identity elements (name, logo, social media, contact info)
+- `subscriptionPlans.ts` - Subscription plan details (pricing, features, limits)
+- `features.ts` - Feature flags for enabling/disabling functionality
+- `env.ts` - Environment variable management
+- `apiEndpoints.ts` - Centralized API endpoints
+- `messages.ts` - Application-wide messages (errors, success, UI text)
+- `appConstants.ts` - Application-wide constants (limits, durations, settings)
+
+### Using the Configuration
+
+Import the configuration directly from the config files:
+
+```typescript
+// Example: Using branding configuration
+import { APP_IDENTITY } from '@/config/branding';
+
+function Header() {
+  return <h1>{APP_IDENTITY.name}</h1>;
+}
+
+// Example: Using feature flags
+import { isFeatureEnabled } from '@/config/features';
+
+function PaymentButton() {
+  if (!isFeatureEnabled('ENABLE_PAYMENTS')) {
+    return null;
+  }
+  return <button>Subscribe</button>;
+}
+```
+
+### Modifying Configuration
+
+To change application-wide settings, modify the appropriate configuration file instead of changing values in individual components. This ensures consistency across the application.
+
 ## MVP Focus
 
 This MVP version focuses on the core functionality of video cropping with a simple and intuitive interface. Advanced features like user accounts, project saving, and batch processing will be added in future versions.

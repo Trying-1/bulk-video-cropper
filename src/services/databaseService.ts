@@ -579,8 +579,7 @@ export class DatabaseService {
         // Update each stat by adding the new value
         for (const [key, value] of Object.entries(updates)) {
           if (typeof value === 'number') {
-            updatedStats[key as keyof DailyUsageStats] = 
-              ((currentStats[key as keyof DailyUsageStats] as number) || 0) + value;
+            (updatedStats as any)[key] = ((currentStats[key as keyof DailyUsageStats] as number) || 0) + value;
           }
         }
         

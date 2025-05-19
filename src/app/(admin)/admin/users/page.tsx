@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useEffect, useState } from 'react';
@@ -113,10 +114,11 @@ export default function UsersPage() {
     }
   };
 
-  const handleUpdateSubscription = async (userId: string, newSubscription: string) => {
+  const updateUserSubscription = async (userId: string, newSubscription: 'free' | 'premium' | 'pro') => {
     try {
-      const userRef = doc(db, 'users', userId);
-      await updateDoc(userRef, {
+      const userDocRef = doc(db, 'users', userId);
+      
+      await updateDoc(userDocRef, {
         subscription: newSubscription
       });
       
@@ -131,6 +133,17 @@ export default function UsersPage() {
     } catch (error) {
       console.error('Error updating subscription:', error);
       alert('Failed to update subscription. Please try again.');
+    }
+  };
+  
+  // Wrapper function that validates subscription type
+  const handleUpdateSubscription = (userId: string, value: string) => {
+    // Validate the subscription value is one of the allowed types
+    if (value === 'free' || value === 'premium' || value === 'pro') {
+      updateUserSubscription(userId, value);
+    } else {
+      console.error('Invalid subscription type:', value);
+      alert('Invalid subscription type. Please select a valid option.');
     }
   };
 

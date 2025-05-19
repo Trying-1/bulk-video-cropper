@@ -104,7 +104,7 @@ export default function AdminDashboardPage() {
         console.log('Attempting to fetch users from Firestore...');
         const usersQuery = collection(db, 'users');
         let userSnapshot;
-        let userData = [];
+        let userData: any[] = [];
         
         try {
           userSnapshot = await getDocs(usersQuery);

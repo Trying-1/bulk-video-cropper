@@ -147,7 +147,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
               // Update app state
               updateAppStateCookie({
                 lastLogin: new Date().toISOString(),
-                authStatus: 'authenticated'
+                // Use a property that is known to exist in AppState
+                hasCompletedOnboarding: true
               });
             } catch (error) {
               console.error('Error fetching user data:', error);
