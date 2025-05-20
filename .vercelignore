@@ -1,0 +1,10 @@
+# Ignore Firebase Functions directory
+functions/
+functions/**/*
+
+# Other files that don't need to be deployed
+README.md
+LICENSE
+.git
+.github
+docs/
