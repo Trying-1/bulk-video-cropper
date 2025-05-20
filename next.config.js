@@ -1,5 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Prevent static generation for specific paths
+  output: 'standalone',
+  generateBuildId: () => 'build-' + new Date().getTime(),
+  
   reactStrictMode: true,
   poweredByHeader: false, // Remove X-Powered-By header for security
   compress: true, // Enable gzip compression

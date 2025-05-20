@@ -48,7 +48,7 @@ export const SUBSCRIPTION_PLANS: Record<string, SubscriptionPlan> = {
     ],
     cta: 'Get Started',
     popular: false,
-    videoLimit: 100,
+    videoLimit: 5,
     videoDurationLimit: 30,
     videoSizeLimit: 100,
     outputQuality: '720p',

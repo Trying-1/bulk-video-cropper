@@ -19,7 +19,8 @@ import { logError, formatErrorMessage } from "@/utils/errorHandling";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import ErrorNotification from "@/components/ErrorNotification";
 
-export default function EditorPage() {
+// Inner component that uses searchParams (needs to be wrapped in Suspense)
+function EditorContent() {
   const { user, subscription } = useAuth();
   
   // Debug logging
@@ -1518,5 +1519,21 @@ export default function EditorPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+// Main page component with Suspense boundary for searchParams
+export default function EditorPage() {
+  return (
+    <Suspense fallback={
+      <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-8 max-w-md w-full shadow-xl">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-500 mx-auto mb-4"></div>
+          <p className="text-center text-gray-700 dark:text-gray-300">Loading editor...</p>
+        </div>
+      </div>
+    }>
+      <EditorContent />
+    </Suspense>
   );
 }
