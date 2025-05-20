@@ -7,8 +7,10 @@
  * See a full list of supported triggers at https://firebase.google.com/docs/functions
  */
 
-import {onRequest} from "firebase-functions/v2/https";
-import * as logger from "firebase-functions/logger";
+// These imports are commented out to prevent build issues when deploying to Vercel
+// Uncomment them when deploying functions directly to Firebase
+// import {onRequest} from "firebase-functions/v2/https";
+// import * as logger from "firebase-functions/logger";
 
 // Start writing functions
 // https://firebase.google.com/docs/functions/typescript
