@@ -457,6 +457,47 @@ function EditorContent() {
     return null;
   };
   
+  // Handle touch start for mobile devices
+  const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (!cropMode || !currentVideo) return;
+    
+    // Prevent scrolling while cropping
+    e.preventDefault();
+    
+    // Get the position relative to the container
+    const rect = e.currentTarget.getBoundingClientRect();
+    const touch = e.touches[0];
+    const x = touch.clientX - rect.left;
+    const y = touch.clientY - rect.top;
+    
+    // Create a synthetic mouse event for resize mode detection
+    const syntheticEvent = {
+      clientX: touch.clientX,
+      clientY: touch.clientY,
+      currentTarget: e.currentTarget
+    };
+    
+    // Check if we're near an edge for resizing
+    const mode = getResizeMode(syntheticEvent as any, currentVideo.cropSettings);
+    setResizeMode(mode);
+    
+    // If we're not resizing or moving, start a new crop
+    if (!mode) {
+      setCropStartPosition({ x, y });
+      
+      // Reset crop settings to start fresh
+      handleCropChange({
+        x,
+        y,
+        width: 0,
+        height: 0
+      });
+    } else {
+      // For resize or move, just record the start position
+      setCropStartPosition({ x, y });
+    }
+  };
+  
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!cropMode || !currentVideo) return;
     
@@ -621,6 +662,151 @@ function EditorContent() {
     
     // Apply the new crop settings
     handleCropChange(newSettings);
+  };
+  
+  // Handle touch move for mobile devices
+  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (!cropMode || !currentVideo || !cropStartPosition) return;
+    
+    // Prevent scrolling while cropping
+    e.preventDefault();
+    
+    // Get the position relative to the container
+    const rect = e.currentTarget.getBoundingClientRect();
+    const touch = e.touches[0];
+    const x = touch.clientX - rect.left;
+    const y = touch.clientY - rect.top;
+    
+    // Get the current crop settings
+    const { cropSettings } = currentVideo;
+    let newSettings = { ...cropSettings };
+    
+    if (!resizeMode) {
+      // Drawing a new crop area
+      const width = Math.abs(x - cropStartPosition.x);
+      const height = Math.abs(y - cropStartPosition.y);
+      const cropX = Math.min(x, cropStartPosition.x);
+      const cropY = Math.min(y, cropStartPosition.y);
+      
+      newSettings = {
+        x: cropX,
+        y: cropY,
+        width,
+        height
+      };
+    } else if (resizeMode === 'move') {
+      // Moving the entire crop area
+      const deltaX = x - cropStartPosition.x;
+      const deltaY = y - cropStartPosition.y;
+      
+      newSettings = {
+        x: Math.max(0, cropSettings.x + deltaX),
+        y: Math.max(0, cropSettings.y + deltaY),
+        width: cropSettings.width,
+        height: cropSettings.height
+      };
+      
+      // Update start position for smooth movement
+      setCropStartPosition({ x, y });
+    } else {
+      // Resizing the crop area - reuse the same logic as mouse move
+      const deltaX = x - cropStartPosition.x;
+      const deltaY = y - cropStartPosition.y;
+      
+      // Handle different resize modes
+      switch (resizeMode) {
+        case 'nw': // Northwest corner
+          newSettings = {
+            x: cropSettings.x + deltaX,
+            y: cropSettings.y + deltaY,
+            width: cropSettings.width - deltaX,
+            height: cropSettings.height - deltaY
+          };
+          break;
+        case 'n': // North edge
+          newSettings = {
+            ...cropSettings,
+            y: cropSettings.y + deltaY,
+            height: cropSettings.height - deltaY
+          };
+          break;
+        case 'ne': // Northeast corner
+          newSettings = {
+            x: cropSettings.x,
+            y: cropSettings.y + deltaY,
+            width: cropSettings.width + deltaX,
+            height: cropSettings.height - deltaY
+          };
+          break;
+        case 'e': // East edge
+          newSettings = {
+            ...cropSettings,
+            width: cropSettings.width + deltaX
+          };
+          break;
+        case 'se': // Southeast corner
+          newSettings = {
+            ...cropSettings,
+            width: cropSettings.width + deltaX,
+            height: cropSettings.height + deltaY
+          };
+          break;
+        case 's': // South edge
+          newSettings = {
+            ...cropSettings,
+            height: cropSettings.height + deltaY
+          };
+          break;
+        case 'sw': // Southwest corner
+          newSettings = {
+            x: cropSettings.x + deltaX,
+            y: cropSettings.y,
+            width: cropSettings.width - deltaX,
+            height: cropSettings.height + deltaY
+          };
+          break;
+        case 'w': // West edge
+          newSettings = {
+            x: cropSettings.x + deltaX,
+            y: cropSettings.y,
+            width: cropSettings.width - deltaX,
+            height: cropSettings.height
+          };
+          break;
+      }
+      
+      // Update start position for smooth resizing
+      setCropStartPosition({ x, y });
+    }
+    
+    // Ensure width and height are not negative
+    if (newSettings.width < 0) {
+      newSettings.x += newSettings.width;
+      newSettings.width = Math.abs(newSettings.width);
+    }
+    
+    if (newSettings.height < 0) {
+      newSettings.y += newSettings.height;
+      newSettings.height = Math.abs(newSettings.height);
+    }
+    
+    // Make sure crop area stays within video boundaries
+    const containerWidth = videoContainerRef.current?.offsetWidth || 0;
+    const containerHeight = videoContainerRef.current?.offsetHeight || 0;
+    
+    newSettings.x = Math.max(0, Math.min(newSettings.x, containerWidth - 10));
+    newSettings.y = Math.max(0, Math.min(newSettings.y, containerHeight - 10));
+    newSettings.width = Math.min(newSettings.width, containerWidth - newSettings.x);
+    newSettings.height = Math.min(newSettings.height, containerHeight - newSettings.y);
+    
+    // Update the crop settings
+    handleCropChange(newSettings);
+  };
+  
+  // Handle touch end for mobile devices
+  const handleTouchEnd = () => {
+    setCropStartPosition(null);
+    setResizeMode(null);
   };
   
   const handleMouseUp = () => {
@@ -1132,6 +1318,9 @@ function EditorContent() {
                           onMouseDown={handleMouseDown}
                           onMouseMove={handleMouseMove}
                           onMouseUp={handleMouseUp}
+                          onTouchStart={handleTouchStart}
+                          onTouchMove={handleTouchMove}
+                          onTouchEnd={handleTouchEnd}
                         ></div>
                       )}
                       {currentVideo.cropSettings.width > 0 && currentVideo.cropSettings.height > 0 && (
