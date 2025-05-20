@@ -7,13 +7,16 @@ import { useAuth } from "@/contexts/AuthContext";
 import { getUserSessionCookie, updateAppStateCookie, getAppStateCookie } from '@/utils/cookies';
 import { useComingSoon } from "@/components/ComingSoonModal";
 import { isFeatureEnabled } from "@/config/features";
-import { APP_IDENTITY, SOCIAL_MEDIA, CONTACT_INFO, LEGAL_DOCS } from "@/config/branding";
+import { APP_IDENTITY, SOCIAL_MEDIA, CONTACT_INFO, LEGAL_DOCS, PRODUCT } from "@/config/branding";
+import { SUBSCRIPTION_PLANS, getAllPlans, calculateAnnualPrice, PROMOTION_CODES } from '@/config/pricing';
 
 export default function Home() {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const { user, loading } = useAuth();
   const { showComingSoon, ComingSoonModal } = useComingSoon();
+  
+  // No state needed for testimonial button
   
   // Check if payments are enabled
   const paymentsEnabled = isFeatureEnabled('ENABLE_PAYMENTS');
@@ -68,7 +71,7 @@ export default function Home() {
               </div>
               
               <h1 className="text-5xl md:text-7xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-teal-500 to-blue-600 dark:from-teal-400 dark:to-blue-500 mb-6 leading-tight">
-                Bulk Video Cropper
+                {APP_IDENTITY.name}
               </h1>
               <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-300 mb-10 max-w-3xl mx-auto">
                 Edit multiple videos at once with our powerful video editing tool. Perfect for social media content creators.
@@ -122,7 +125,7 @@ export default function Home() {
               Simple Process
             </span>
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white">
-              How <span className="text-teal-600 dark:text-teal-400">Bulk Video Cropper</span> Works
+              How <span className="text-teal-600 dark:text-teal-400">{APP_IDENTITY.name}</span> Works
             </h2>
             <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto mt-4">
               Crop multiple videos in just a few simple steps - no technical skills required.
@@ -236,97 +239,74 @@ export default function Home() {
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 hover:shadow-xl transition-shadow border-t-4 border-gray-200 dark:border-gray-700 relative overflow-hidden">
                 <div className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 -z-10 opacity-50"></div>
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                  Free
+                  {SUBSCRIPTION_PLANS.FREE.name}
                 </h3>
                 <div className="text-4xl font-bold text-gray-800 dark:text-white mb-6">
-                  $0<span className="text-sm text-gray-500 font-normal">/month</span>
+                  ${SUBSCRIPTION_PLANS.FREE.price}<span className="text-sm text-gray-500 font-normal">/{SUBSCRIPTION_PLANS.FREE.billing.includes('Free') ? 'forever' : 'month'}</span>
                 </div>
                 <ul className="space-y-3 mb-8">
-                  <li className="flex items-center text-gray-600 dark:text-gray-300">
-                    <svg className="w-5 h-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                    </svg>
-                    5 videos per month
-                  </li>
-                  <li className="flex items-center text-gray-600 dark:text-gray-300">
-                    <svg className="w-5 h-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                    </svg>
-                    Basic video cropping
-                  </li>
-                  <li className="flex items-center text-gray-600 dark:text-gray-300">
-                    <svg className="w-5 h-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                    </svg>
-                    720p output quality
-                  </li>
-                  <li className="flex items-center text-gray-600 dark:text-gray-300">
-                    <svg className="w-5 h-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                    </svg>
-                    Small watermark
-                  </li>
+                  {SUBSCRIPTION_PLANS.FREE.features.map((feature, index) => (
+                    <li key={index} className="flex items-center text-gray-600 dark:text-gray-300">
+                      <svg className="w-5 h-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                      {feature}
+                    </li>
+                  ))}
                 </ul>
                 <button
                   onClick={() => {
                     const user = localStorage.getItem('user');
                     if (user) {
                       // User is logged in, go to plans
-                      window.location.href = '/plans?plan=free';
+                      window.location.href = `/plans?plan=${SUBSCRIPTION_PLANS.FREE.id}`;
                     } else {
                       // User is not logged in, go to auth with returnUrl
-                      window.location.href = '/auth?source=free&returnUrl=/plans?plan=free';
+                      window.location.href = `/auth?source=${SUBSCRIPTION_PLANS.FREE.id}&returnUrl=/plans?plan=${SUBSCRIPTION_PLANS.FREE.id}`;
                     }
                   }}
                   className="block w-full py-3 px-4 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-center text-gray-700 dark:text-white font-medium rounded-lg transition-colors"
                 >
-                  Get Started Free
+                  {SUBSCRIPTION_PLANS.FREE.cta}
                 </button>
               </div>
 
               {/* Premium Plan */}
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-8 hover:shadow-2xl transition-shadow border-t-4 border-teal-500 dark:border-teal-400 relative scale-105 z-10 overflow-hidden">
-                <div className="absolute -top-6 -right-6 bg-teal-500 text-white text-xs font-bold px-4 py-1 rotate-45 transform w-28">
-                  POPULAR
-                </div>
+                {SUBSCRIPTION_PLANS.PREMIUM.popular && (
+                  <div className="absolute -top-6 -right-6 bg-teal-500 text-white text-xs font-bold px-4 py-1 rotate-45 transform w-28">
+                    POPULAR
+                  </div>
+                )}
+                {SUBSCRIPTION_PLANS.PREMIUM.hasPromotion && (
+                  <div className="absolute top-2 left-2 bg-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                    {PROMOTION_CODES.find(p => p.code === SUBSCRIPTION_PLANS.PREMIUM.promotionCode)?.badgeText || `${SUBSCRIPTION_PLANS.PREMIUM.discountPercentage}% OFF`}
+                  </div>
+                )}
                 <div className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-br from-teal-50 to-teal-100 dark:from-teal-900/20 dark:to-teal-800/10 -z-10 opacity-50"></div>
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                  Premium
+                  {SUBSCRIPTION_PLANS.PREMIUM.name}
                 </h3>
                 <div className="text-4xl font-bold text-gray-800 dark:text-white mb-6">
-                  $9.99<span className="text-sm text-gray-500 font-normal">/month</span>
+                  {SUBSCRIPTION_PLANS.PREMIUM.hasPromotion ? (
+                    <>
+                      <span className="line-through text-2xl text-gray-400 mr-2">${SUBSCRIPTION_PLANS.PREMIUM.price}</span>
+                      ${SUBSCRIPTION_PLANS.PREMIUM.discountedPrice}
+                    </>
+                  ) : (
+                    `$${SUBSCRIPTION_PLANS.PREMIUM.price}`
+                  )}
+                  <span className="text-sm text-gray-500 font-normal">/{SUBSCRIPTION_PLANS.PREMIUM.billing}</span>
                 </div>
                 <ul className="space-y-3 mb-8">
-                  <li className="flex items-center text-gray-600 dark:text-gray-300">
-                    <svg className="w-5 h-5 text-teal-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                    </svg>
-                    <strong>50 videos per month</strong>
-                  </li>
-                  <li className="flex items-center text-gray-600 dark:text-gray-300">
-                    <svg className="w-5 h-5 text-teal-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                    </svg>
-                    <strong>Advanced cropping options</strong>
-                  </li>
-                  <li className="flex items-center text-gray-600 dark:text-gray-300">
-                    <svg className="w-5 h-5 text-teal-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                    </svg>
-                    <strong>1080p HD output quality</strong>
-                  </li>
-                  <li className="flex items-center text-gray-600 dark:text-gray-300">
-                    <svg className="w-5 h-5 text-teal-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                    </svg>
-                    <strong>No watermark</strong>
-                  </li>
-                  <li className="flex items-center text-gray-600 dark:text-gray-300">
-                    <svg className="w-5 h-5 text-teal-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                    </svg>
-                    <strong>Priority support</strong>
-                  </li>
+                  {SUBSCRIPTION_PLANS.PREMIUM.features.map((feature, index) => (
+                    <li key={index} className="flex items-center text-gray-600 dark:text-gray-300">
+                      <svg className="w-5 h-5 text-teal-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                      <strong>{feature}</strong>
+                    </li>
+                  ))}
                 </ul>
                 <button
                   onClick={() => {
@@ -342,58 +322,49 @@ export default function Home() {
                     const user = localStorage.getItem('user');
                     if (user) {
                       // User is logged in, go directly to payment
-                      window.location.href = '/payment?plan=premium';
+                      window.location.href = `/payment?plan=${SUBSCRIPTION_PLANS.PREMIUM.id}`;
                     } else {
                       // User is not logged in, go to auth with returnUrl
-                      window.location.href = '/auth?returnUrl=/payment?plan=premium';
+                      window.location.href = `/auth?returnUrl=/payment?plan=${SUBSCRIPTION_PLANS.PREMIUM.id}`;
                     }
                   }}
                   className="block w-full py-3 px-4 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-center text-white font-medium rounded-lg transition-colors shadow-md"
                 >
-                  Upgrade to Premium
+                  {SUBSCRIPTION_PLANS.PREMIUM.cta}
                 </button>
               </div>
 
               {/* Pro Plan */}
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 hover:shadow-xl transition-shadow border-t-4 border-purple-500 dark:border-purple-400 relative overflow-hidden">
+                {SUBSCRIPTION_PLANS.PRO.hasPromotion && (
+                  <div className="absolute top-2 left-2 bg-purple-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                    {PROMOTION_CODES.find(p => p.code === SUBSCRIPTION_PLANS.PRO.promotionCode)?.badgeText || `${SUBSCRIPTION_PLANS.PRO.discountPercentage}% OFF`}
+                  </div>
+                )}
                 <div className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/10 -z-10 opacity-50"></div>
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                  Pro
+                  {SUBSCRIPTION_PLANS.PRO.name}
                 </h3>
                 <div className="text-4xl font-bold text-gray-800 dark:text-white mb-6">
-                  $29.99<span className="text-sm text-gray-500 font-normal">/month</span>
+                  {SUBSCRIPTION_PLANS.PRO.hasPromotion ? (
+                    <>
+                      <span className="line-through text-2xl text-gray-400 mr-2">${SUBSCRIPTION_PLANS.PRO.price}</span>
+                      ${SUBSCRIPTION_PLANS.PRO.discountedPrice}
+                    </>
+                  ) : (
+                    `$${SUBSCRIPTION_PLANS.PRO.price}`
+                  )}
+                  <span className="text-sm text-gray-500 font-normal">/{SUBSCRIPTION_PLANS.PRO.billing}</span>
                 </div>
                 <ul className="space-y-3 mb-8">
-                  <li className="flex items-center text-gray-600 dark:text-gray-300">
-                    <svg className="w-5 h-5 text-purple-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                    </svg>
-                    <strong>Unlimited videos</strong>
-                  </li>
-                  <li className="flex items-center text-gray-600 dark:text-gray-300">
-                    <svg className="w-5 h-5 text-purple-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                    </svg>
-                    <strong>All Premium features</strong>
-                  </li>
-                  <li className="flex items-center text-gray-600 dark:text-gray-300">
-                    <svg className="w-5 h-5 text-purple-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                    </svg>
-                    <strong>4K output quality</strong>
-                  </li>
-                  <li className="flex items-center text-gray-600 dark:text-gray-300">
-                    <svg className="w-5 h-5 text-purple-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                    </svg>
-                    <strong>Batch processing</strong>
-                  </li>
-                  <li className="flex items-center text-gray-600 dark:text-gray-300">
-                    <svg className="w-5 h-5 text-purple-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                    </svg>
-                    <strong>24/7 dedicated support</strong>
-                  </li>
+                  {SUBSCRIPTION_PLANS.PRO.features.map((feature, index) => (
+                    <li key={index} className="flex items-center text-gray-600 dark:text-gray-300">
+                      <svg className="w-5 h-5 text-purple-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                      <strong>{feature}</strong>
+                    </li>
+                  ))}
                 </ul>
                 <button
                   onClick={() => {
@@ -409,15 +380,15 @@ export default function Home() {
                     const user = localStorage.getItem('user');
                     if (user) {
                       // User is logged in, go directly to payment
-                      window.location.href = '/payment?plan=pro';
+                      window.location.href = `/payment?plan=${SUBSCRIPTION_PLANS.PRO.id}`;
                     } else {
                       // User is not logged in, go to auth with returnUrl
-                      window.location.href = '/auth?returnUrl=/payment?plan=pro';
+                      window.location.href = `/auth?returnUrl=/payment?plan=${SUBSCRIPTION_PLANS.PRO.id}`;
                     }
                   }}
                   className="block w-full py-3 px-4 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-center text-white font-medium rounded-lg transition-colors shadow-md"
                 >
-                  Upgrade to Pro
+                  {SUBSCRIPTION_PLANS.PRO.cta}
                 </button>
               </div>
             </div>
@@ -430,7 +401,7 @@ export default function Home() {
             <h2 className="text-4xl font-bold text-center text-gray-900 dark:text-white mb-12">
               What Our Users Say
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-8 max-w-6xl mx-auto">
               <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg shadow-md">
                 <div className="flex items-center mb-4">
                   <div className="h-12 w-12 rounded-full bg-teal-100 dark:bg-teal-900 flex items-center justify-center text-teal-500 dark:text-teal-300 text-xl font-bold mr-4">
@@ -470,8 +441,29 @@ export default function Home() {
                   </div>
                 </div>
                 <p className="text-gray-600 dark:text-gray-300 italic">
-                  "The premium plan is worth every penny. The quality and speed of processing has significantly improved our workflow."
+                  "The video quality is excellent even after cropping. This tool maintains the professional look our brand needs."
                 </p>
+              </div>
+              <div className="bg-gradient-to-br from-teal-50 to-blue-50 dark:from-gray-800 dark:to-gray-700 p-6 rounded-lg shadow-md border border-teal-100 dark:border-teal-900 text-center flex flex-col justify-center">
+                <div className="mb-4">
+                  <div className="h-16 w-16 bg-teal-100 dark:bg-teal-900 rounded-full flex items-center justify-center mx-auto mb-2">
+                    <svg className="h-8 w-8 text-teal-600 dark:text-teal-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                  </div>
+                  <h4 className="text-lg font-semibold text-gray-900 dark:text-white">Share Your Experience</h4>
+                </div>
+                
+                <p className="text-gray-600 dark:text-gray-300 mb-6">
+                  Love using {APP_IDENTITY.name}? We'd love to hear your success story!
+                </p>
+                
+                <Link 
+                  href="/testimonials/submit" 
+                  className="inline-block py-3 px-6 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white font-medium rounded-lg transition-colors shadow-md"
+                >
+                  Submit Your Testimonial
+                </Link>
               </div>
             </div>
           </div>
@@ -596,9 +588,16 @@ export default function Home() {
               <p className="text-sm">
                 {APP_IDENTITY.copyright}
               </p>
-              <p className="mt-2 text-xs">
-                Currently offering a 20% discount on Premium plans with code SUMMER20
-              </p>
+              {PROMOTION_CODES.length > 0 && (
+                <p className="mt-2 text-xs">
+                  {PROMOTION_CODES.map((promo, index) => (
+                    <span key={promo.code}>
+                      {index > 0 && " • "}
+                      {promo.description || `${promo.discountPercentage}% off ${promo.applicablePlans.join(", ")} with code ${promo.code}`}
+                    </span>
+                  ))}
+                </p>
+              )}
             </div>
           </div>
         </footer>

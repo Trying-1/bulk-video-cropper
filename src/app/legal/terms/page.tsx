@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import Footer from '@/components/Footer';
 import LegalSideNav from '@/components/LegalSideNav';
+import { APP_EMAILS } from '@/config/branding';
 
 export default function TermsOfService() {
   return (
@@ -102,7 +103,7 @@ export default function TermsOfService() {
                 If you have any questions about these Terms of Service, please contact us at:
               </p>
               <div className="bg-white p-4 rounded border border-gray-200">
-                <p className="text-gray-700"><strong>Email:</strong> support@bulkvidcropper.com</p>
+                <p className="text-gray-700"><strong>Email:</strong> {APP_EMAILS.support}</p>
                 <p className="text-gray-700"><strong>Address:</strong> 123 Video Lane, San Francisco, CA 94103, USA</p>
               </div>
             </section>

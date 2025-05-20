@@ -5,7 +5,7 @@
  * for premium features, protecting against client-side manipulation attempts.
  */
 
-import { SubscriptionPlan, SUBSCRIPTION_PLANS } from '@/config/subscriptionPlans';
+import { SUBSCRIPTION_PLANS, SubscriptionPlan, SERVICE_LIMITS } from '@/config/pricing';
 import { secureGet, secureSet } from './secureStorage';
 import { logSecurityEvent, SecurityEventType } from './securityMonitoring';
 
@@ -22,25 +22,30 @@ const DEFAULT_PLAN = SUBSCRIPTION_PLANS.FREE;
 export const isFeatureAvailableForPlan = (featureName: string, planId: string): boolean => {
   const plan = SUBSCRIPTION_PLANS[planId.toUpperCase()] || DEFAULT_PLAN;
   
-  // Check feature availability based on feature name
+  // Check if the feature is included in the plan's features list
+  if (plan.features.includes(featureName)) {
+    return true;
+  }
+  
+  // For specific features that aren't directly in the features array
   switch (featureName) {
     case 'batchProcessing':
-      return !!plan.batchProcessing;
+      return plan.features.includes('Batch processing');
       
     case 'highQualityOutput':
-      return plan.outputQuality !== 'standard';
+      return plan.features.includes('High-quality output');
       
     case 'noWatermark':
-      return !plan.watermark;
+      return plan.features.includes('No watermark');
       
     case 'extendedVideoLimit':
-      return plan.videoLimit > DEFAULT_PLAN.videoLimit;
+      return true; // We now use credits instead of video limits
       
     case 'extendedDurationLimit':
-      return plan.videoDurationLimit > DEFAULT_PLAN.videoDurationLimit;
+      return true; // All plans have the same duration limit now
       
     case 'extendedSizeLimit':
-      return plan.videoSizeLimit > DEFAULT_PLAN.videoSizeLimit;
+      return plan.features.includes('Extended size limit') || plan.id !== 'free';
       
     // Default to false for unknown features
     default:
@@ -132,12 +137,15 @@ export const getSubscriptionLimits = (userId?: string) => {
   const plan = getUserSubscriptionPlan(userId);
   
   return {
-    videoLimit: plan.videoLimit,
-    videoDurationLimit: plan.videoDurationLimit,
-    videoSizeLimit: plan.videoSizeLimit,
-    batchProcessing: plan.batchProcessing,
-    watermark: plan.watermark,
-    outputQuality: plan.outputQuality,
+    totalCredits: plan.totalCredits,
+    maxUploads: plan.maxUploadsAtOnce,
+    hasBatchProcessing: plan.features.includes('Batch processing'),
+    hasWatermark: !plan.features.includes('No watermark'),
+    hasHighQuality: plan.features.includes('High-quality output'),
+    // Legacy fields kept for backwards compatibility
+    videoLimit: plan.totalCredits, // Credits are now equivalent to video limit
+    videoDurationLimit: 300, // Default for all plans
+    videoSizeLimit: plan.id === 'free' ? 100 : 500, // MB, simplified for free vs paid plans
   };
 };
 

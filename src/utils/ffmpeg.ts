@@ -1,6 +1,11 @@
 import { FFmpeg } from '@ffmpeg/ffmpeg';
 import { fetchFile } from '@ffmpeg/util';
 
+// Simple function to check internet connectivity
+function isOnline(): boolean {
+  return typeof navigator !== 'undefined' && navigator.onLine;
+}
+
 // Global cancellation flag
 let isCancelled = false;
 
@@ -24,6 +29,7 @@ let loadPromise: Promise<FFmpeg> | null = null;
 
 /**
  * Load and initialize FFmpeg with improved error handling and retry logic
+ * Optimized for Next.js environment
  */
 export const loadFFmpeg = async (): Promise<FFmpeg> => {
   // If already loaded, return the instance
@@ -43,32 +49,41 @@ export const loadFFmpeg = async (): Promise<FFmpeg> => {
       console.log('Initializing FFmpeg...');
       ffmpeg = new FFmpeg();
 
-      // Most compatible loading approach - using CDN without toBlobURL
+      // Special handling for Next.js environment
       try {
-        console.log('Loading FFmpeg using simple configuration...');
+        console.log('Loading FFmpeg using Next.js compatible configuration...');
         
-        // Try loading with no parameters first - this often works
-        await ffmpeg.load();
+        // Create config object to work in Next.js environment
+        const config: Record<string, any> = {
+          // Add cross-origin isolation options
+          corsCrossCORSDetails: {
+            credentials: 'same-origin',
+          },
+        };
         
-        // Fallback loading method
+        // Check if we're in development mode
+        const isDev = process.env.NODE_ENV === 'development';
+        
+        // Use local copies in production, CDN in development
+        if (isDev) {
+          console.log('Development mode: using CDN resources');
+          config.coreURL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.2/dist/umd/ffmpeg-core.js';
+          config.wasmURL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.2/dist/umd/ffmpeg-core.wasm';
+          // Add worker URL for browser environment
+          config.workerURL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.2/dist/umd/ffmpeg-core.worker.js';
+        }
+        
+        // Attempt to load with our configuration
+        await ffmpeg.load(config);
+        
+        // If that failed, try alternative CDNs
         if (!ffmpeg.loaded) {
-          console.log('Default loading failed, using CDN fallback...');
-          
-          // First fallback - unpkg
-          try {
-            await ffmpeg.load({
-              coreURL: 'https://unpkg.com/@ffmpeg/core@0.12.2/dist/umd/ffmpeg-core.js',
-              wasmURL: 'https://unpkg.com/@ffmpeg/core@0.12.2/dist/umd/ffmpeg-core.wasm',
-            });
-          } catch (fallbackError) {
-            console.log('First fallback failed, trying jsDelivr CDN...');
-            
-            // Second fallback - jsDelivr (more reliable alternative CDN)
-            await ffmpeg.load({
-              coreURL: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.2/dist/umd/ffmpeg-core.js',
-              wasmURL: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.2/dist/umd/ffmpeg-core.wasm',
-            });
-          }
+          console.log('Primary loading method failed, trying alternative CDN...');
+          await ffmpeg.load({
+            coreURL: 'https://unpkg.com/@ffmpeg/core@0.12.2/dist/umd/ffmpeg-core.js',
+            wasmURL: 'https://unpkg.com/@ffmpeg/core@0.12.2/dist/umd/ffmpeg-core.wasm',
+            workerURL: 'https://unpkg.com/@ffmpeg/core@0.12.2/dist/umd/ffmpeg-core.worker.js'
+          });
         }
         
         console.log('FFmpeg loaded successfully');
@@ -169,6 +184,11 @@ export const cropVideo = async (
       console.log('FFmpeg not loaded yet, loading now...');
     }
     
+    // Check internet connection before proceeding
+    if (!isOnline()) {
+      throw new Error('Internet connection required for video processing');
+    }
+    
     // Ensure FFmpeg is loaded
     const ffmpegInstance = await loadFFmpeg();
     
@@ -221,6 +241,13 @@ export const cropVideo = async (
     
     // Add audio copy and output filename
     ffmpegArgs.push('-c:a', 'copy', outputFileName);
+    
+    // Check internet connection before processing
+    if (!isOnline()) {
+      // Clean up files if offline
+      await ffmpegInstance.deleteFile(inputFileName);
+      throw new Error('Processing paused: Internet connection required');
+    }
     
     // Execute the FFmpeg command
     await ffmpegInstance.exec(ffmpegArgs);
@@ -291,7 +318,8 @@ export const processBatchVideos = async (
     try {
       // Report progress at start
       if (onProgress) {
-        const progressPercent = Math.round(((i) / videos.length) * 100);
+        // Calculate progress based on completed videos (not the current one)
+        const progressPercent = i === 0 ? 0 : Math.round(((i) / videos.length) * 100);
         onProgress(progressPercent, video.file.name);
       }
       
@@ -316,8 +344,24 @@ export const processBatchVideos = async (
       
       // Report progress after completion
       if (onProgress) {
-        const progressPercent = Math.round(((i + 1) / videos.length) * 100);
+        // Calculate progress based on videos completed so far
+        // Each video contributes (1/total) * 100% to the overall progress
+        // When the last video is done, go to exactly 100%
+        let progressPercent;
+        
+        if (i === videos.length - 1) {
+          // Last video completed - show exactly 100%
+          progressPercent = 100;
+        } else {
+          // For intermediate videos, calculate progress that represents portion completed
+          // Make sure we never reach 100% until the very end
+          // Each video gets an equal segment of the progress bar (e.g., 33% per video in a 3-video batch)
+          progressPercent = Math.floor(((i + 1) / videos.length) * 100);
+        }
+        
+        // Name of next video to process (empty if this was the last one)
         const nextVideoName = i < videos.length - 1 ? videos[i + 1].file.name : '';
+        
         onProgress(
           progressPercent,
           nextVideoName,

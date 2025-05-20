@@ -1,19 +1,25 @@
-
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { db } from '@/config/firebase';
-import { collection, getDocs, query, orderBy, limit, startAfter, where, doc, updateDoc } from 'firebase/firestore';
-import { User } from '@/types/user';
+import { db, auth } from '@/config/firebase';
+import { collection, getDocs, doc, query, orderBy, limit, startAfter } from 'firebase/firestore';
+import { adminStyles } from '../styles/adminStyles';
+import { saveToLocalStorage, getFromLocalStorage } from '@/utils/storageUtils';
+import { withAdminAuth } from '@/utils/withAdminAuth';
+import { toast } from 'react-hot-toast';
 
-interface ExtendedUser extends User {
+interface ExtendedUser {
   id: string;
+  email?: string;
+  displayName?: string;
+  subscription?: 'free' | 'premium' | 'pro';
   createdAt: Date;
   formattedDate?: string;
+  stripeCustomerId?: string;
+  stripeSubscriptionId?: string;
 }
 
-export default function UsersPage() {
+function UsersPage() {
   const [users, setUsers] = useState<ExtendedUser[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<ExtendedUser[]>([]);
   const [loading, setLoading] = useState(true);
@@ -21,6 +27,7 @@ export default function UsersPage() {
   const [subscriptionFilter, setSubscriptionFilter] = useState('all');
   const [lastVisible, setLastVisible] = useState<any>(null);
   const [hasMore, setHasMore] = useState(true);
+  const [updatingUser, setUpdatingUser] = useState<string | null>(null);
   const PAGE_SIZE = 10;
 
   useEffect(() => {
@@ -116,26 +123,45 @@ export default function UsersPage() {
 
   const updateUserSubscription = async (userId: string, newSubscription: 'free' | 'premium' | 'pro') => {
     try {
-      const userDocRef = doc(db, 'users', userId);
+      setUpdatingUser(userId);
       
-      await updateDoc(userDocRef, {
-        subscription: newSubscription
+      // Get current user's ID token
+      const idToken = await auth.currentUser?.getIdToken();
+      if (!idToken) {
+        throw new Error('Not authenticated');
+      }
+      
+      // Call secure API endpoint
+      const response = await fetch('/api/admin/users/update-subscription', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${idToken}`
+        },
+        body: JSON.stringify({ userId, subscription: newSubscription })
       });
       
-      // Update local state
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update subscription');
+      }
+      
+      // Update the user in the state
       setUsers(prevUsers => 
         prevUsers.map(user => 
-          user.id === userId 
-            ? { ...user, subscription: newSubscription } 
-            : user
+          user.id === userId ? { ...user, subscription: newSubscription } : user
         )
       );
+      
+      toast.success(`User's subscription updated to ${newSubscription}`);
+      setUpdatingUser(null);
     } catch (error) {
-      console.error('Error updating subscription:', error);
-      alert('Failed to update subscription. Please try again.');
+      console.error('Error updating user subscription:', error);
+      toast.error(`Failed to update subscription: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setUpdatingUser(null);
     }
   };
-  
+
   // Wrapper function that validates subscription type
   const handleUpdateSubscription = (userId: string, value: string) => {
     // Validate the subscription value is one of the allowed types
@@ -148,44 +174,47 @@ export default function UsersPage() {
   };
 
   return (
-    <div className="pb-12">
+    // CSRF protection token is handled by Next.js middleware
+    <div className={adminStyles.pageContainer}>
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">User Management</h1>
-        <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+        <h1 className={adminStyles.pageTitle}>User Management</h1>
+        <p className={adminStyles.pageDescription}>
           View and manage all users of the Bulk Video Cropper platform.
         </p>
       </div>
 
       {/* Filter Controls */}
-      <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-4 mb-6">
+      <div className={adminStyles.contentCard}>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label htmlFor="search" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label htmlFor="search" className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">
               Search Users
             </label>
             <input
               type="text"
               id="search"
               placeholder="Search by email or ID..."
-              className="shadow-sm focus:ring-teal-500 focus:border-teal-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md"
+              className={adminStyles.input}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              aria-label="Search users by email or ID"
             />
           </div>
           <div>
-            <label htmlFor="subscription" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label htmlFor="subscription" className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">
               Subscription Type
             </label>
             <select
               id="subscription"
-              className="shadow-sm focus:ring-teal-500 focus:border-teal-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md"
+              className={adminStyles.select}
               value={subscriptionFilter}
               onChange={(e) => setSubscriptionFilter(e.target.value)}
+              aria-label="Filter by subscription type"
             >
-              <option value="all">All Subscriptions</option>
-              <option value="free">Free</option>
-              <option value="premium">Premium</option>
-              <option value="pro">Pro</option>
+              <option value="all" className={adminStyles.option}>All Subscriptions</option>
+              <option value="free" className={adminStyles.option}>Free</option>
+              <option value="premium" className={adminStyles.option}>Premium</option>
+              <option value="pro" className={adminStyles.option}>Pro</option>
             </select>
           </div>
           <div className="flex items-end">
@@ -195,7 +224,8 @@ export default function UsersPage() {
                 setSubscriptionFilter('all');
                 fetchUsers();
               }}
-              className="bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 px-4 py-2 rounded-md text-sm font-medium"
+              className={adminStyles.secondaryButton}
+              aria-label="Reset all filters and search"
             >
               Reset Filters
             </button>
@@ -204,143 +234,142 @@ export default function UsersPage() {
       </div>
 
       {/* Users Table */}
-      <div className="bg-white dark:bg-gray-800 shadow overflow-hidden rounded-lg">
-        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-          <thead className="bg-gray-50 dark:bg-gray-700">
-            <tr>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
-              >
-                User
-              </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
-              >
-                Joined
-              </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
-              >
-                Subscription
-              </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
-              >
-                Status
-              </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
-              >
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-            {loading && users.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="px-6 py-4 whitespace-nowrap">
-                  <div className="flex justify-center">
-                    <div className="animate-spin h-5 w-5 border-2 border-teal-500 rounded-full border-t-transparent"></div>
-                    <span className="ml-2 text-gray-600 dark:text-gray-400">Loading users...</span>
-                  </div>
-                </td>
-              </tr>
-            ) : filteredUsers.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="px-6 py-4 whitespace-nowrap text-center text-gray-500 dark:text-gray-400">
-                  No users found matching your filters.
-                </td>
-              </tr>
-            ) : (
-              filteredUsers.map((user) => (
-                <tr key={user.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className="flex-shrink-0 h-10 w-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-                        {user.email?.charAt(0).toUpperCase() || 'U'}
-                      </div>
-                      <div className="ml-4">
-                        <div className="text-sm font-medium text-gray-900 dark:text-white">
-                          {user.email}
-                        </div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400">
-                          ID: {user.id.substring(0, 8)}...
-                        </div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900 dark:text-white">{user.formattedDate}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                        ${user.subscription === 'pro' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300' : 
-                          user.subscription === 'premium' ? 'bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-300' : 
-                          'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'}`}>
-                        {user.subscription ? (user.subscription.charAt(0).toUpperCase() + user.subscription.slice(1)) : 'Free'}
-                      </span>
-                      <div className="ml-2">
-                        <select
-                          className="text-xs border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 rounded"
-                          value={user.subscription || 'free'}
-                          onChange={(e) => handleUpdateSubscription(user.id, e.target.value)}
-                        >
-                          <option value="free">Free</option>
-                          <option value="premium">Premium</option>
-                          <option value="pro">Pro</option>
-                        </select>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
-                      Active
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <button
-                      onClick={() => alert('View details for ' + user.email)}
-                      className="text-teal-600 hover:text-teal-900 dark:text-teal-400 dark:hover:text-teal-300 mr-3"
-                    >
-                      View
-                    </button>
-                    <button
-                      onClick={() => alert('This would reset usage for ' + user.email)}
-                      className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
-                    >
-                      Reset Usage
-                    </button>
-                  </td>
+      <div className="-my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
+        <div className="py-2 align-middle inline-block min-w-full sm:px-6 lg:px-8">
+          <div className="shadow overflow-hidden border border-gray-200 dark:border-gray-700 sm:rounded-lg">
+            <table className={adminStyles.table} aria-label="Users table">
+              <thead className={adminStyles.tableHeader}>
+                <tr>
+                  <th scope="col" className={adminStyles.tableHeaderCell}>
+                    User
+                  </th>
+                  <th scope="col" className={adminStyles.tableHeaderCell}>
+                    Joined
+                  </th>
+                  <th scope="col" className={adminStyles.tableHeaderCell}>
+                    Subscription
+                  </th>
+                  <th scope="col" className={adminStyles.tableHeaderCell}>
+                    Status
+                  </th>
+                  <th scope="col" className={adminStyles.tableHeaderCell}>
+                    <span className="sr-only">Actions</span>
+                  </th>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-        
-        {/* Pagination/Load More */}
-        {filteredUsers.length > 0 && (
-          <div className="bg-gray-50 dark:bg-gray-700 px-6 py-4 border-t border-gray-200 dark:border-gray-600 flex justify-between items-center">
-            <div className="text-sm text-gray-500 dark:text-gray-400">
-              Showing <span className="font-medium">{filteredUsers.length}</span> users
-            </div>
-            {hasMore && (
-              <button
-                onClick={handleLoadMore}
-                disabled={loading}
-                className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-              >
-                {loading ? 'Loading...' : 'Load More'}
-              </button>
+              </thead>
+              <tbody className={adminStyles.tableBody}>
+                {loading && users.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="px-6 py-4 whitespace-nowrap">
+                      <div className={`${adminStyles.contentCard} flex justify-center items-center h-64`}>
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-700 dark:border-teal-400" aria-label="Loading users"></div>
+                      </div>
+                    </td>
+                  </tr>
+                ) : filteredUsers.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="px-6 py-10 text-center text-sm text-gray-700 dark:text-gray-300 font-medium">
+                      No users found. Try adjusting your filters.
+                    </td>
+                  </tr>
+                ) : (
+                  filteredUsers.map((user) => (
+                    <tr key={user.id} className={adminStyles.tableRow}>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0 h-10 w-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                            {user.email?.charAt(0).toUpperCase() || 'U'}
+                          </div>
+                          <div className="ml-4">
+                            <div className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                              {user.email}
+                            </div>
+                            <div className="text-sm text-gray-800 dark:text-gray-300">
+                              ID: {user.id.substring(0, 8)}...
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className={adminStyles.tableCell}>
+                        <div className="text-sm text-gray-800 dark:text-gray-200">{user.formattedDate}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <span 
+                            className={user.subscription === 'pro' 
+                              ? adminStyles.statusPill.pro 
+                              : user.subscription === 'premium' 
+                              ? adminStyles.statusPill.premium 
+                              : adminStyles.statusPill.free}
+                            aria-label={`Current subscription: ${user.subscription ? (user.subscription.charAt(0).toUpperCase() + user.subscription.slice(1)) : 'Free'}`}
+                          >
+                            {user.subscription ? (user.subscription.charAt(0).toUpperCase() + user.subscription.slice(1)) : 'Free'}
+                          </span>
+                          <div className="ml-2">
+                            <select
+                              className={adminStyles.select + " text-xs p-1"}
+                              value={user.subscription || 'free'}
+                              onChange={(e) => handleUpdateSubscription(user.id, e.target.value)}
+                              aria-label={`Change subscription for ${user.email}`}
+                            >
+                              <option value="free" className={adminStyles.option}>Free</option>
+                              <option value="premium" className={adminStyles.option}>Premium</option>
+                              <option value="pro" className={adminStyles.option}>Pro</option>
+                            </select>
+                          </div>
+                        </div>
+                      </td>
+                      <td className={adminStyles.tableCell}>
+                        <span className={adminStyles.statusPill.active} aria-label="User status: Active">
+                          Active
+                        </span>
+                      </td>
+                      <td className={adminStyles.tableCell + " text-right"}>
+                        <button
+                          onClick={() => alert('View details for ' + user.email)}
+                          className="text-teal-700 hover:text-teal-900 dark:text-teal-400 dark:hover:text-teal-300 mr-3 font-medium"
+                          aria-label={`View details for ${user.email}`}
+                        >
+                          View
+                        </button>
+                        <button
+                          onClick={() => alert('This would reset usage for ' + user.email)}
+                          className="text-red-700 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 font-medium"
+                          aria-label={`Reset usage for ${user.email}`}
+                        >
+                          Reset Usage
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+            
+            {/* Pagination/Load More */}
+            {filteredUsers.length > 0 && (
+              <div className="px-6 py-4 border-t border-gray-300 dark:border-gray-600 flex justify-between items-center bg-gray-300 dark:bg-gray-700">
+                <div className="text-sm text-gray-800 dark:text-gray-200">
+                  Showing <span className="font-semibold">{filteredUsers.length}</span> users
+                </div>
+                {hasMore && (
+                  <button
+                    onClick={handleLoadMore}
+                    disabled={loading}
+                    className={`${adminStyles.primaryButton} ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    aria-label="Load more users"
+                  >
+                    {loading ? 'Loading...' : 'Load More'}
+                  </button>
+                )}
+              </div>
             )}
           </div>
-        )}
+        </div>
       </div>
     </div>
   );
 }
+
+// Export with withAdminAuth
+export default withAdminAuth(UsersPage);

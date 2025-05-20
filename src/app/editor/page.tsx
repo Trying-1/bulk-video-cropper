@@ -10,7 +10,28 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { processBatchVideos, cancelProcessing, loadFFmpeg } from "@/utils/ffmpeg";
 import { usePathname, useSearchParams } from "next/navigation";
-import { getVideoLimitBySubscription, getVideoDurationLimitBySubscription, getVideoSizeLimitBySubscription } from '@/utils/subscriptionLimits';
+import { 
+  getMaxUploadLimitBySubscription, 
+  getMonthlyLimitBySubscription, 
+  getVideoDurationLimitBySubscription, 
+  getVideoSizeLimitBySubscription, 
+  getVideoLimitBySubscription // For backward compatibility
+} from '@/utils/subscriptionLimits';
+import { 
+  initializeVideoUsageTracking, 
+  startNewUploadSession, 
+  checkUploadSessionLimit, 
+  checkCreditLimit, 
+  recordVideoUpload, 
+  recordVideoProcessed, 
+  getUserUsageStats 
+} from '@/utils/usageTracking';
+import {
+  initConnectionMonitoring,
+  onConnectionLost,
+  onConnectionRestored,
+  isOnline
+} from '@/utils/connectionMonitor';
 import ProcessingStatus from "@/components/ProcessingStatus";
 import VideoPreviewModal from "@/components/VideoPreviewModal";
 
@@ -23,16 +44,46 @@ import ErrorNotification from "@/components/ErrorNotification";
 function EditorContent() {
   const { user, subscription } = useAuth();
   
-  // Debug logging
-  console.log('Subscription data:', subscription);
-  console.log('User data:', user);
-  
   // Get limits based on subscription
-  const videoLimit = getVideoLimitBySubscription(subscription);
-  const durationLimit = getVideoDurationLimitBySubscription(subscription);
-  const sizeLimit = getVideoSizeLimitBySubscription(subscription);
+  const uploadLimit = getMaxUploadLimitBySubscription(user, subscription);
+  const monthlyLimit = getMonthlyLimitBySubscription(user, subscription);
+  const durationLimit = getVideoDurationLimitBySubscription(user, subscription);
+  const sizeLimit = getVideoSizeLimitBySubscription(user, subscription);
   
-  console.log('Calculated limits:', { videoLimit, durationLimit, sizeLimit });
+  // For backward compatibility - some components might still use videoLimit
+  const videoLimit = uploadLimit;
+  
+  // State to track credit usage information
+  const [usageInfo, setUsageInfo] = useState<{
+    uploadSessionUsed: number;
+    uploadSessionRemaining: number;
+    creditsUsed: number;
+    creditsRemaining: number | "Unlimited";
+  }>({ 
+    uploadSessionUsed: 0, 
+    uploadSessionRemaining: uploadLimit, 
+    creditsUsed: 0, 
+    creditsRemaining: typeof monthlyLimit === "number" ? monthlyLimit : "Unlimited" 
+  });
+  
+  // Function to refresh usage stats from the tracking system
+  const refreshUsageStats = async () => {
+    try {
+      const stats = await getUserUsageStats(user?.uid, true); // Force refresh to get latest data
+      
+      setUsageInfo({
+        uploadSessionUsed: stats.uploadSession.used,
+        uploadSessionRemaining: typeof stats.uploadSession.remaining === "number" ? stats.uploadSession.remaining : uploadLimit,
+        creditsUsed: stats.monthly.used,
+        creditsRemaining: stats.monthly.remaining
+      });
+      
+      console.log('Usage stats refreshed:', stats);
+    } catch (error) {
+      console.error('Error refreshing usage stats:', error);
+    }
+  };
+  
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -69,8 +120,9 @@ function EditorContent() {
   });
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [processingProgress, setProcessingProgress] = useState<number>(0);
-  const [currentProcessingVideo, setCurrentProcessingVideo] = useState<string>();
+  const [currentProcessingVideo, setCurrentProcessingVideo] = useState<string | undefined>(undefined);
   const [completionMessage, setCompletionMessage] = useState<string | undefined>();
+  const [isConnected, setIsConnected] = useState<boolean>(true); // Track internet connection
 
   const [cropMode, setCropMode] = useState(false);
   const [cropStartPosition, setCropStartPosition] = useState<{ x: number; y: number } | null>(null);
@@ -91,6 +143,39 @@ function EditorContent() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const videoContainerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  
+  // Initialize video usage tracking when component mounts
+  useEffect(() => {
+    initializeVideoUsageTracking();
+    startNewUploadSession();
+    
+    const refreshUsageStats = async () => {
+      try {
+        // Clear the app state cache to force a fresh read from the cookie
+        const cookieData = document.cookie;
+        console.log('Refreshing usage stats, current cookies:', cookieData);
+        
+        // Wait a moment to ensure cookie updates are processed
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        const stats = await getUserUsageStats(user?.uid);
+        console.log('Fresh usage stats:', stats);
+        
+        setUsageInfo({
+          uploadSessionUsed: stats.uploadSession.used,
+          uploadSessionRemaining: stats.uploadSession.remaining,
+          creditsUsed: stats.monthly.used,
+          creditsRemaining: typeof stats.monthly.remaining === 'number' 
+            ? stats.monthly.remaining 
+            : 'Unlimited'
+        });
+      } catch (error) {
+        console.error('Error refreshing usage stats:', error);
+      }
+    };
+    
+    refreshUsageStats();
+  }, [user?.uid]);
   
 
   
@@ -117,12 +202,35 @@ function EditorContent() {
         const files = Array.from(event.target.files);
         const validatedVideos: ValidatedVideo[] = [];
         
-        // Check if adding these files would exceed the configured video limit
+        // Check upload session and credit limits
+        const sessionLimits = await checkUploadSessionLimit(user?.uid);
+        const creditLimits = await checkCreditLimit(user?.uid);
+
+        // Update usage info
+        setUsageInfo({
+          uploadSessionUsed: sessionLimits.currentCount,
+          uploadSessionRemaining: sessionLimits.remaining,
+          creditsUsed: typeof creditLimits.currentCount === 'number' ? creditLimits.currentCount : 0,
+          creditsRemaining: creditLimits.remaining
+        });
+        
+        // Check if credit limit would be exceeded
+        if (typeof creditLimits.remaining === 'number' && creditLimits.remaining <= 0) {
+          setErrorMessage(`You've reached your credit limit of ${creditLimits.limit} credits. Please upgrade your plan for more processing capacity.`);
+          setIsUploading(false);
+          return;
+        }
+        
+        // Check if adding these files would exceed the configured upload limit
         const currentCount = videos.length;
-        const remainingSlots = videoLimit - currentCount;
+        const remainingSlots = Math.min(
+          sessionLimits.remaining, 
+          uploadLimit - currentCount
+        );
         
         if (remainingSlots <= 0) {
-          setErrorMessage(`Maximum limit of ${videoLimit} videos reached. Please remove some videos before adding more.`);
+          setErrorMessage(`Maximum limit of ${uploadLimit} videos per session reached. Please process or remove some videos before adding more.`);
+          setIsUploading(false);
           return;
         }
         
@@ -130,8 +238,11 @@ function EditorContent() {
         const filesToProcess = files.slice(0, remainingSlots);
         
         if (files.length > remainingSlots) {
-          setErrorMessage(`Only processing ${remainingSlots} of ${files.length} videos due to the ${videoLimit} video limit.`);
+          setErrorMessage(`Only processing ${remainingSlots} of ${files.length} videos due to the ${uploadLimit} video limit.`);
         }
+        
+        // Record video upload
+        recordVideoUpload(filesToProcess.length);
         
         for (const file of filesToProcess) {
           const validation = await validateVideo(file, sizeLimit, durationLimit);
@@ -559,6 +670,32 @@ function EditorContent() {
       return;
     }
     
+    // Check credit limits before processing
+    const creditLimits = await checkCreditLimit(user?.uid);
+    
+    // Update usage info
+    setUsageInfo(prev => ({
+      ...prev,
+      creditsUsed: typeof creditLimits.currentCount === 'number' ? creditLimits.currentCount : 0,
+      creditsRemaining: creditLimits.remaining
+    }));
+    
+    // Check if credit limit would be exceeded
+    if (typeof creditLimits.remaining === 'number' && creditLimits.remaining <= 0) {
+      setErrorMessage(`You've reached your credit limit of ${creditLimits.limit} credits. Please upgrade your plan for more processing capacity.`);
+      return;
+    }
+    
+    // Get unprocessed videos to check if we have enough credits
+    const unprocessedVideos = videos.filter(video => !video.processed);
+    if (typeof creditLimits.remaining === 'number' && unprocessedVideos.length > creditLimits.remaining) {
+      if (!
+        window.confirm(`You have ${creditLimits.remaining} credits remaining, but are trying to process ${unprocessedVideos.length} videos. Only the first ${creditLimits.remaining} videos will be processed. Continue?`)
+      ) {
+        return;
+      }
+    }
+    
     setIsProcessing(true);
     setProcessingProgress(0);
     setErrorMessage(null);
@@ -644,8 +781,9 @@ function EditorContent() {
         completedVideos = await processBatchVideos(
           videosToProcessWithSettings,
           (progress, currentVideo, justCompletedVideo) => {
-            // Update progress state
-            setProcessingProgress(Math.round(progress * 100));
+            // Update progress state - processBatchVideos already returns percentages (0-100)
+            // so we don't need to multiply by 100 again
+            setProcessingProgress(progress);
             setCurrentProcessingVideo(currentVideo);
             
             // If a video was just completed, update the UI immediately
@@ -653,6 +791,32 @@ function EditorContent() {
               try {
                 // Create a URL for the processed video
                 const processedUrl = URL.createObjectURL(justCompletedVideo.processedVideo);
+                
+                // Find the original video to get its details
+                const originalVideo = videos.find(v => v.id === justCompletedVideo.id);
+                
+                // Record this processed video in our usage tracking system
+                if (originalVideo) {
+                  const fileSize = Math.round(originalVideo.file.size / (1024 * 1024)); // Convert to MB
+                  const duration = originalVideo.duration || 0;
+                  
+                  // Record the processed video in our usage tracking and update the database
+                  recordVideoProcessed(justCompletedVideo.id, fileSize, duration, user?.uid)
+                    .then(() => {
+                      console.log('Video processed, credit used for:', justCompletedVideo.id);
+                    })
+                    .catch(error => {
+                      console.error('Error recording video processing:', error);
+                    });
+                  
+                  // Use our dedicated function to refresh the usage stats
+                  refreshUsageStats();
+                  
+                  // Also refresh after a slight delay to ensure cookie updates are processed
+                  setTimeout(() => {
+                    refreshUsageStats();
+                  }, 500);
+                }
                 
                 setVideos(prev => prev.map(video => {
                   if (video.id === justCompletedVideo.id) {
@@ -807,9 +971,9 @@ function EditorContent() {
     <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-orange-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 relative overflow-hidden">
       {/* Background decoration elements */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
-        <div className="absolute top-20 left-10 w-64 h-64 bg-gradient-to-br from-teal-300 to-teal-400 rounded-full filter blur-3xl opacity-10 animate-pulse"></div>
-        <div className="absolute -top-20 right-20 w-80 h-80 bg-gradient-to-br from-blue-300 to-purple-400 rounded-full filter blur-3xl opacity-10 animate-pulse delay-700"></div>
-        <div className="absolute bottom-40 right-10 w-72 h-72 bg-gradient-to-br from-orange-300 to-pink-400 rounded-full filter blur-3xl opacity-10 animate-pulse delay-500"></div>
+        <div className="absolute top-20 left-10 w-64 h-64 bg-gradient-to-br from-teal-300 to-teal-400 rounded-full filter blur-3xl opacity-10 animate-pulse" />
+        <div className="absolute -top-20 right-20 w-80 h-80 bg-gradient-to-br from-blue-300 to-purple-400 rounded-full filter blur-3xl opacity-10 animate-pulse delay-700" />
+        <div className="absolute bottom-40 right-10 w-72 h-72 bg-gradient-to-br from-orange-300 to-pink-400 rounded-full filter blur-3xl opacity-10 animate-pulse delay-500" />
       </div>
       <ProcessingStatus 
         isProcessing={isProcessing} 
@@ -817,7 +981,7 @@ function EditorContent() {
         currentVideoName={currentProcessingVideo}
         onCancel={handleCancelProcessing}
         onClose={closeProcessingDialog}
-        totalVideos={videos.filter(v => !v.processed && v.cropSettings.width > 0).length}
+        totalVideos={videos.length} /* Count all videos */
         processedVideos={videos.filter(v => v.processed).length}
         completionMessage={completionMessage}
       />
@@ -836,21 +1000,64 @@ function EditorContent() {
         type="error"
       />
       
-      {/* Back Button */}
+      {/* Back Button and Usage Stats */}
       <div className="max-w-7xl mx-auto px-2 sm:px-4 md:px-6 lg:px-8 py-4 relative z-10">
-        <button
-          onClick={handleBack}
-          className="group relative overflow-hidden p-2 rounded-lg text-teal-600 dark:text-teal-400 transition-all duration-300 flex items-center shadow-sm hover:shadow-md"
-          title="Back"
-        >
-          <span className="absolute inset-0 w-full h-full bg-teal-50 dark:bg-teal-900/30 opacity-50 group-hover:opacity-100 transition-opacity duration-300"></span>
-          <span className="relative flex items-center">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1 transition-transform duration-300 group-hover:-translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            <span className="text-sm font-medium">Back</span>
-          </span>
-        </button>
+        <div className="flex justify-between items-center">
+          <button
+            onClick={handleBack}
+            className="group relative overflow-hidden p-2 rounded-lg text-teal-600 dark:text-teal-400 transition-all duration-300 flex items-center shadow-sm hover:shadow-md"
+            title="Back"
+          >
+            <span className="absolute inset-0 w-full h-full bg-teal-50 dark:bg-teal-900/30 opacity-50 group-hover:opacity-100 transition-opacity duration-300"></span>
+            <span className="relative flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1 transition-transform duration-300 group-hover:-translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              <span className="text-sm font-medium">Back</span>
+            </span>
+          </button>
+          
+          {/* Usage Stats Display */}
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md px-4 py-2 flex flex-col sm:flex-row items-center gap-4">
+            <div className="flex items-center">
+              <div className="text-xs text-gray-700 dark:text-gray-300 mr-2 font-semibold">Session:</div>
+              <div className="flex items-center">
+                <span className="text-sm font-medium text-gray-800 dark:text-white">{usageInfo.uploadSessionUsed}/{uploadLimit}</span>
+                <div className="ml-2 w-20 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-gradient-to-r from-teal-400 to-blue-500 rounded-full"
+                    style={{ width: `${Math.min(100, (usageInfo.uploadSessionUsed / uploadLimit) * 100)}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex items-center">
+              <div className="text-xs text-gray-700 dark:text-gray-300 mr-2 font-semibold">Credits:</div>
+              <div className="flex items-center">
+                {typeof usageInfo.creditsRemaining === 'number' ? (
+                  <>
+                    <span className="text-sm font-medium text-gray-800 dark:text-white">{usageInfo.creditsUsed}/{monthlyLimit}</span>
+                    <div className="ml-2 w-20 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full rounded-full ${usageInfo.creditsUsed / (monthlyLimit as number) > 0.8 ? 'bg-gradient-to-r from-orange-400 to-red-500' : 'bg-gradient-to-r from-teal-400 to-blue-500'}`}
+                        style={{ width: `${Math.min(100, (usageInfo.creditsUsed / (monthlyLimit as number)) * 100)}%` }}
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <span className="text-sm font-medium flex items-center">
+                    <span className="mr-1 text-gray-800 dark:text-white">{usageInfo.creditsUsed}</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-teal-600 dark:text-teal-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                    <span className="ml-1 text-teal-600 dark:text-teal-400 font-semibold">Unlimited</span>
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
       
       {/* Main Content */}
@@ -877,7 +1084,7 @@ function EditorContent() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
               {/* Video Preview */}
               <div className="md:col-span-1 lg:col-span-2 space-y-4 md:space-y-6">
-                <div className="aspect-video bg-black rounded-lg overflow-hidden relative">
+                <div className="aspect-video bg-gradient-to-br from-gray-900 to-black rounded-lg overflow-hidden relative shadow-xl border border-gray-800 transition-all duration-300 hover:shadow-2xl hover:border-gray-700">
                   {/* Video Navigation Controls */}
                   {videos.length > 1 && currentVideo && (
                     <div className="absolute top-1/2 left-0 right-0 transform -translate-y-1/2 flex justify-between px-2 z-20 pointer-events-none">
@@ -966,9 +1173,39 @@ function EditorContent() {
                   )}
                 </div>
                 
+                {/* Process Button Below Video */}
+                {currentVideo && (
+                  <div className="flex justify-end mt-2">
+                    {/* Process Button */}
+                    <button
+                      onClick={handleProcessVideo}
+                      disabled={isProcessing || videos.length === 0}
+                      className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-lg shadow-md hover:shadow-lg transform hover:translate-y-[-1px] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none overflow-hidden group"
+                    >
+                      <span className="absolute right-0 w-8 h-32 -mt-12 transition-all duration-1000 transform translate-x-12 bg-white opacity-10 rotate-12 group-hover:-translate-x-40 ease"></span>
+                      {isProcessing ? (
+                        <div className="flex items-center">
+                          <svg className="animate-spin mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          <span>Processing...</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                          </svg>
+                          <span>Process</span>
+                        </div>
+                      )}
+                    </button>
+                  </div>
+                )}
+                
                 {/* Crop Controls */}
                 {currentVideo && (
-                  <div className="bg-[#e6fcf5] dark:from-teal-900/60 dark:to-teal-800/60 rounded-lg p-5 shadow-sm border border-[#99e9db]">
+                  <div className="bg-gradient-to-br from-slate-50 via-purple-50 to-slate-100 dark:from-slate-900/80 dark:via-purple-900/20 dark:to-slate-800/60 rounded-lg p-5 shadow-lg border border-purple-200/50 dark:border-purple-800/30 backdrop-blur-sm">
                     <h3 className="text-lg font-semibold text-teal-800 dark:text-teal-200 mb-4">Crop Settings</h3>
                     
                     <div className="mb-5">
@@ -1262,10 +1499,10 @@ function EditorContent() {
                           <button
                             key={ratio.name}
                             onClick={() => handleAspectRatioChange(ratio.name)}
-                            className={`px-4 py-2 text-sm rounded-md focus:outline-none transition-colors ${
+                            className={`relative px-4 py-2 text-sm rounded-md focus:outline-none transition-all duration-300 overflow-hidden shadow-sm ${
                               aspectRatio === ratio.name
-                                ? "bg-[#99e9db] text-teal-800 dark:bg-teal-700 dark:text-teal-100 font-medium"
-                                : "bg-[#d6f5f0] dark:bg-teal-900/30 hover:bg-[#b8efea] dark:hover:bg-teal-800/30 text-teal-700 dark:text-teal-300"
+                                ? "bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white font-medium shadow-md transform scale-105"
+                                : "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-indigo-300 dark:hover:border-indigo-700 hover:shadow"
                             }`}
                           >
                             {ratio.name}
@@ -1280,7 +1517,7 @@ function EditorContent() {
               {/* Sidebar */}
               <div className="space-y-4 md:space-y-6">
                 {/* Upload Section */}
-                <div className="bg-gradient-to-br from-teal-50 to-teal-100 dark:from-teal-900/40 dark:to-teal-800/40 rounded-lg p-3 sm:p-4 shadow-sm">
+                <div className="bg-gradient-to-br from-indigo-50 via-blue-50 to-indigo-100 dark:from-indigo-900/40 dark:via-blue-900/30 dark:to-indigo-800/40 rounded-lg p-3 sm:p-4 shadow-lg border border-indigo-200/50 dark:border-indigo-800/30 backdrop-blur-sm transition-all duration-300 hover:shadow-xl">
                   <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-4">Upload Videos</h3>
                   <label className="flex flex-col items-center justify-center w-full h-32 sm:h-48 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:hover:bg-bray-800 dark:bg-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:hover:border-gray-500 dark:hover:bg-gray-600 transition-colors duration-200">
                     <input 
@@ -1328,7 +1565,7 @@ function EditorContent() {
                 </div>
                 
                 {/* Source Video List */}
-                <div className="bg-gradient-to-br from-teal-50 to-teal-100 dark:from-teal-900/40 dark:to-teal-800/40 rounded-lg p-3 sm:p-4 shadow-sm">
+                <div className="bg-gradient-to-br from-violet-50 via-purple-50 to-violet-100 dark:from-violet-900/40 dark:via-purple-900/30 dark:to-violet-800/40 rounded-lg p-3 sm:p-4 shadow-lg border border-purple-200/50 dark:border-purple-800/30 backdrop-blur-sm transition-all duration-300 hover:shadow-xl">
                   <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-4">Source Videos ({videos.length})</h3>
                   {videos.length > 0 ? (
                     <div className="space-y-2 max-h-48 sm:max-h-60 overflow-y-auto">
@@ -1377,7 +1614,7 @@ function EditorContent() {
                 </div>
                 
                 {/* Processed Video List */}
-                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mt-4">
+                <div className="bg-gradient-to-br from-pink-50 via-fuchsia-50 to-pink-100 dark:from-pink-900/40 dark:via-fuchsia-900/30 dark:to-pink-800/40 rounded-lg p-4 mt-4 shadow-lg border border-pink-200/50 dark:border-pink-800/30 backdrop-blur-sm transition-all duration-300 hover:shadow-xl">
                   <div className="flex justify-between items-center mb-4">
                     <h3 className="text-sm font-medium text-gray-900 dark:text-white">
                       Processed Videos ({videos.filter(v => v.processed).length})
@@ -1478,30 +1715,7 @@ function EditorContent() {
                   )}
                 </div>
                 
-                {/* Process Section */}
-                <div className="bg-gradient-to-br from-teal-50 to-teal-100 dark:from-teal-900/40 dark:to-teal-800/40 rounded-lg p-3 sm:p-4 shadow-sm">
-                  <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-4">Process Video</h3>
-                  
 
-                                    <button
-                    onClick={handleProcessVideo}
-                    disabled={isProcessing || videos.length === 0}
-                    className="w-full inline-flex justify-center items-center px-3 py-2 sm:px-4 sm:py-3 border border-transparent rounded-md shadow-sm text-sm sm:text-base font-medium text-white bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-105 duration-200 mt-4"
-                  >
-                    {isProcessing ? (
-                      <>
-                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        Processing...
-                      </>
-                    ) : (
-                      "Process Videos"
-                    )}
-                  </button>
-                </div>
-                
                 {/* Instructions */}
                 <div className="bg-gradient-to-br from-teal-50 to-teal-100 dark:from-teal-900/40 dark:to-teal-800/40 rounded-lg p-3 sm:p-4 shadow-sm">
                   <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-2">How to Use</h3>

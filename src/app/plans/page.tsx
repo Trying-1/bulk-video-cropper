@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { toast } from 'react-hot-toast';
 import { useComingSoon } from '@/components/ComingSoonModal';
 import { isFeatureEnabled } from '@/config/features';
-import { getAllPlans } from '@/config/subscriptionPlans';
+import { getAllPlans, PROMOTION_CODES, calculateDiscountedPrice, SubscriptionPlan } from '@/config/pricing';
 
 export default function PlansPage() {
   const router = useRouter();
@@ -17,24 +17,49 @@ export default function PlansPage() {
   // Check if payments are enabled
   const paymentsEnabled = isFeatureEnabled('ENABLE_PAYMENTS');
   
-  // Discount system configuration (currently disabled)
-  const [discounts, setDiscounts] = useState({
-    premium: {
-      active: false,
-      code: 'SUMMER20',
-      percent: 20,
-      expiresIn: '2d 15h 32m',
-    },
-    pro: {
-      active: false,
-      code: 'PRO15',
-      percent: 15,
-      expiresIn: '5d 10h 22m',
-    }
-  });
+  // Use the centralized promotion codes from pricing configuration
+  const [activePromoCodes, setActivePromoCodes] = useState<string[]>([]);
+  
+  // Get the first active promotion code if any
+  const activePromo = activePromoCodes.length > 0 ? PROMOTION_CODES.find(promo => 
+    promo.code === activePromoCodes[0]
+  ) : null;
 
   // Track pre-selected plan from URL
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
+  
+  // Check if there's an active discount for the plan
+  const hasPlanDiscount = (planId: string): boolean => {
+    if (!activePromo) return false;
+    
+    const promo = PROMOTION_CODES.find(p => p.code === activePromo.code && p.isActive);
+    if (!promo) return false;
+    
+    // Manually check if promotion is valid for the plan
+    try {
+      const currentDate = new Date();
+      const startDate = new Date(promo.startDate);
+      const endDate = new Date(promo.endDate);
+      
+      return (
+        promo.isActive &&
+        currentDate >= startDate &&
+        currentDate <= endDate &&
+        promo.applicablePlans.includes(planId.toLowerCase())
+      );
+    } catch (error) {
+      console.error('Error checking plan discount:', error);
+      return false;
+    }
+  };
+  
+  // Calculate discounted price for a plan
+  const calculatePlanPrice = (plan: SubscriptionPlan) => {
+    if (!activePromo || !hasPlanDiscount(plan.id)) return plan.price;
+    const promo = PROMOTION_CODES.find(p => p.code === activePromo.code && p.isActive);
+    if (!promo) return plan.price;
+    return calculateDiscountedPrice(plan.price, promo.discountPercentage);
+  };
 
   useEffect(() => {
     // Check for plan parameter in URL
@@ -59,35 +84,52 @@ export default function PlansPage() {
     }
   }, []);
 
-  // Toggle discount for demo purposes
-  const toggleDiscount = (plan: 'premium' | 'pro') => {
-    setDiscounts(prev => ({
-      ...prev,
-      [plan]: {
-        ...prev[plan],
-        active: !prev[plan].active
+  // Toggle promotion code for a plan
+  const togglePromotion = (promoCode: string) => {
+    // Only allow one active promotion at a time
+    setActivePromoCodes(prev => {
+      if (prev.includes(promoCode)) {
+        return [];
       }
-    }));
+      return [promoCode];
+    });
   };
 
-  // Calculate discounted price
-  const getDiscountedPrice = (price: number, planId: string) => {
-    if (planId === 'premium' && discounts.premium.active) {
-      return (price * (100 - discounts.premium.percent) / 100).toFixed(2);
+  // Apply promotion code
+  const applyPromoCode = (code: string) => {
+    const promo = PROMOTION_CODES.find(p => p.code === code && p.isActive);
+    if (promo) {
+      setActivePromoCodes([code]);
+    } else {
+      toast.error('Invalid or expired promotion code');
     }
-    if (planId === 'pro' && discounts.pro.active) {
-      return (price * (100 - discounts.pro.percent) / 100).toFixed(2);
-    }
-    return price.toFixed(2);
   };
 
-  // Get plans from centralized configuration
-  const plans = getAllPlans().map(plan => ({
-    ...plan,
-    // Convert PlanFeature[] to string[] for display
-    features: plan.features.map(feature => feature.text),
-    limitations: plan.limitations.map(limitation => limitation.text)
-  }));
+  // Clear all active promotions
+  const clearPromotions = () => {
+    setActivePromoCodes([]);
+  };
+
+  // Calculate price with any active promotion codes
+  const getDiscountedPrice = (plan: SubscriptionPlan) => {
+    // Skip free plans
+    if (plan.price === 0) return plan.price.toFixed(2);
+    
+    // Check for any applicable promo codes that are active
+    const applicablePromo = PROMOTION_CODES.find(promo => 
+      activePromoCodes.includes(promo.code) && 
+      promo.applicablePlans.includes(plan.id)
+    );
+    
+    if (applicablePromo) {
+      return calculateDiscountedPrice(plan.price, applicablePromo.discountPercentage).toFixed(2);
+    }
+    
+    return plan.price.toFixed(2);
+  };
+
+  // Get plans from centralized pricing configuration
+  const plans = getAllPlans();
 
   // Function to handle selecting a plan
   const handleSelectPlan = (planId: string) => {
@@ -182,9 +224,14 @@ export default function PlansPage() {
           {plans.map((plan) => {
             const isPremium = plan.id === 'premium';
             const isPro = plan.id === 'pro';
-            const hasDiscount = (isPremium && discounts.premium.active) || (isPro && discounts.pro.active);
-            const discountData = isPremium ? discounts.premium : isPro ? discounts.pro : null;
-            const discountPrice = hasDiscount ? getDiscountedPrice(plan.price, plan.id) : plan.price.toFixed(2);
+            // Check if any promo codes apply to this plan
+            const applicablePromos = PROMOTION_CODES.filter(promo => 
+              activePromoCodes.includes(promo.code) && 
+              promo.applicablePlans.includes(plan.id)
+            );
+            const hasDiscount = applicablePromos.length > 0;
+            const activePromo = hasDiscount ? applicablePromos[0] : null;
+            const discountPrice = getDiscountedPrice(plan);
             
             return (
               <div 
@@ -205,9 +252,9 @@ export default function PlansPage() {
                 )}
                 
                 {/* Discount badge - only for premium and pro */}
-                {hasDiscount && (
+                {hasPlanDiscount(plan.id) && activePromo && (
                   <div className="absolute -right-10 top-6 transform rotate-45 bg-yellow-500 text-yellow-900 font-bold py-1 px-12 shadow-md z-20">
-                    {discountData?.percent}% OFF
+                    {activePromo.discountPercentage}% OFF
                   </div>
                 )}
                 
@@ -216,15 +263,17 @@ export default function PlansPage() {
                   
                   {/* Price display with discount if applicable */}
                   <div className="flex items-baseline mb-6">
-                    {hasDiscount ? (
+                    {hasPlanDiscount(plan.id) && activePromo ? (
                       <>
                         <span className="relative inline-block mr-2">
                           <span className="text-2xl text-gray-500 dark:text-gray-400 line-through">${plan.price.toFixed(2)}</span>
                           <span className="absolute -top-4 right-0 bg-red-500 text-white text-xs px-1 py-0.5 rounded">
-                            SAVE {discountData?.percent}%
+                            SAVE {activePromo.discountPercentage}%
                           </span>
                         </span>
-                        <span className="text-4xl font-bold text-teal-600 dark:text-teal-400">${discountPrice}</span>
+                        <span className="text-4xl font-bold text-teal-600 dark:text-teal-400">
+                          ${calculatePlanPrice(plan).toFixed(2)}
+                        </span>
                       </>
                     ) : (
                       <span className="text-4xl font-bold text-teal-600 dark:text-teal-400">${plan.price.toFixed(2)}</span>
@@ -240,10 +289,10 @@ export default function PlansPage() {
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-yellow-600 dark:text-yellow-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
                           </svg>
-                          <span className="text-yellow-800 dark:text-yellow-200 font-medium">{discountData?.code}</span>
+                          <span className="text-yellow-800 dark:text-yellow-200 font-medium">{activePromo?.code}</span>
                         </div>
                         <div className="text-xs text-yellow-600 dark:text-yellow-400">
-                          Expires in: {discountData?.expiresIn}
+                          Limited time offer
                         </div>
                       </div>
                       <div className="mt-1 h-1.5 w-full bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
@@ -310,17 +359,24 @@ export default function PlansPage() {
                     )}
                   </button>
 
-                  {/* For testing: toggle discount button (hidden in production) */}
-                  {(isPremium || isPro) && process.env.NODE_ENV !== 'production' && (
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleDiscount(isPremium ? 'premium' : 'pro');
-                      }}
-                      className="mt-4 text-xs text-gray-500 dark:text-gray-400 hover:underline"
-                    >
-                      {hasDiscount ? 'Remove discount' : 'Apply discount'}
-                    </button>
+                  {/* Toggle applicable promotion codes */}
+                  {plan.price > 0 && (
+                    <div className="mt-4">
+                      {PROMOTION_CODES.filter(promo => 
+                        promo.isActive && promo.applicablePlans.includes(plan.id)
+                      ).map(promo => (
+                        <button 
+                          key={promo.code}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            togglePromotion(promo.code);
+                          }}
+                          className="text-xs text-gray-500 dark:text-gray-400 hover:underline mx-1"
+                        >
+                          {activePromoCodes.includes(promo.code) ? `Remove ${promo.code}` : `Apply ${promo.code} (${promo.discountPercentage}% off)`}
+                        </button>
+                      ))}
+                    </div>
                   )}
                 </div>
               </div>

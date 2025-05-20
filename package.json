@@ -21,6 +21,8 @@
     "@types/cache-manager": "^4.0.6",
     "@types/firebase": "^2.4.32",
     "cache-manager": "^6.4.3",
+    "chart.js": "^4.4.9",
+    "chartjs-chart-matrix": "^3.0.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
@@ -39,7 +41,8 @@
     "react-hot-toast": "^2.5.2",
     "react-icons": "^4.12.0",
     "stripe": "^18.1.0",
-    "tailwind-merge": "^3.3.0"
+    "tailwind-merge": "^3.3.0",
+    "zod": "^3.25.7"
   },
   "devDependencies": {
     "@types/js-cookie": "^3.0.6",

@@ -1,5 +1,5 @@
-# robots.txt for Bulk Video Cropper
-# Last updated: 2025-05-19
+# robots.txt for Bulk Video Kropper
+# Last updated: 2025-05-20
 
 User-agent: *
 
@@ -33,4 +33,4 @@ Disallow: /api/*
 Crawl-delay: 10
 
 # Allow sitemap
-Sitemap: https://bulkvidcropper.com/sitemap.xml
+Sitemap: https://bulkvideocropper.com/sitemap.xml

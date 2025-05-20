@@ -1,19 +1,21 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
+import { APP_IDENTITY, APP_URLS } from '@/config/branding'
 
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Bulk Video Cropper | Fast & Easy Video Editing for Social Media',
+  metadataBase: new URL(APP_URLS.baseUrl),
+  title: `${APP_IDENTITY.name} | Fast & Easy Video Editing for Social Media`,
   description: 'Crop multiple videos at once with precision. Perfect for Instagram, TikTok, YouTube and all social media platforms. Free online tool, no watermarks.',
   keywords: 'video cropper, bulk video editor, crop videos online, social media video tool, instagram video cropper, tiktok video editor, batch video processing',
-  authors: [{ name: 'Bulk Video Cropper Team' }],
+  authors: [{ name: `${APP_IDENTITY.name} Team` }],
   openGraph: {
-    title: 'Bulk Video Cropper | Fast & Easy Video Editing for Social Media',
+    title: `${APP_IDENTITY.name} | Fast & Easy Video Editing for Social Media`,
     description: 'Crop multiple videos at once with precision. Perfect for Instagram, TikTok, YouTube and all social media platforms.',
-    url: 'https://bulkvidcropper.com',
-    siteName: 'Bulk Video Cropper',
+    url: APP_URLS.baseUrl,
+    siteName: APP_IDENTITY.name,
     images: [
       {
         url: '/og-image.jpg',
@@ -27,7 +29,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Bulk Video Cropper | Fast & Easy Video Editing',
+    title: `${APP_IDENTITY.name} | Fast & Easy Video Editing`,
     description: 'Crop multiple videos at once with precision. Perfect for all social media platforms.',
     images: ['/twitter-image.jpg'],
   },

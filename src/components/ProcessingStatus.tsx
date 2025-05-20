@@ -47,15 +47,18 @@ const ProcessingStatus: React.FC<ProcessingStatusProps> = ({
   const [smoothProgress, setSmoothProgress] = useState(0);
   
   useEffect(() => {
+    // Ensure progress is never greater than 100
+    const clampedProgress = Math.min(progress, 100);
+    
     // When actual progress changes, animate smoothly to the new value
     const animationFrame = requestAnimationFrame(() => {
-      if (Math.abs(smoothProgress - progress) < 0.1) {
-        setSmoothProgress(progress);
+      if (Math.abs(smoothProgress - clampedProgress) < 0.1) {
+        setSmoothProgress(clampedProgress);
         return;
       }
       
       // Move smoothProgress toward progress at a rate of 2% per frame
-      const step = (progress - smoothProgress) * 0.1;
+      const step = (clampedProgress - smoothProgress) * 0.1;
       setSmoothProgress(prev => prev + step);
     });
     
@@ -99,7 +102,9 @@ const ProcessingStatus: React.FC<ProcessingStatusProps> = ({
         <div className="bg-teal-50 dark:bg-teal-900/30 p-3 rounded-lg mb-4 border border-teal-100 dark:border-teal-800">
           <div className="flex justify-between mb-2">
             <span className="text-sm font-medium text-teal-800 dark:text-teal-200">Progress</span>
-            <span className="text-sm font-bold text-teal-800 dark:text-teal-200">{processedVideos} of {totalVideos} videos</span>
+            <span className="text-sm font-bold text-teal-800 dark:text-teal-200">
+            {processedVideos > 0 ? processedVideos : 0} of {totalVideos && totalVideos > 0 ? totalVideos : 0} videos
+          </span>
           </div>
           
           {currentVideoName && isProcessing && (
@@ -126,12 +131,12 @@ const ProcessingStatus: React.FC<ProcessingStatusProps> = ({
         <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 mb-2 overflow-hidden">
           <div 
             className="bg-gradient-to-r from-teal-500 to-teal-600 h-3 rounded-full" 
-            style={{ width: `${smoothProgress}%` }}
+            style={{ width: `${Math.min(Math.max(0, smoothProgress), 100)}%` }}
           ></div>
         </div>
         
         <p className="text-center text-sm font-medium text-teal-700 dark:text-teal-300 mb-4">
-          {Math.round(progress)}% Complete
+          {Math.min(Math.round(Math.max(0, progress)), 100)}% Complete
         </p>
         
         <div className="mt-4 flex justify-between items-center">

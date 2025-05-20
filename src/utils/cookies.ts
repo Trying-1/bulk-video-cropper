@@ -50,6 +50,30 @@ export interface AppState {
   workflowLastUpdated?: string; // When the workflow was last updated
   videoUploads?: number; // Count of video uploads
   videoProcesses?: number; // Count of videos processed
+  
+  // Video usage tracking for subscription plans
+  videoUsage?: {
+    // Current upload session tracking
+    currentUploadSession: {
+      count: number; // Number of videos in current upload session
+      startedAt: string; // Timestamp when session started
+    };
+    // Monthly usage tracking
+    monthlyUsage: {
+      count: number; // Total videos processed this month
+      lastResetDate: string; // When the monthly counter was last reset
+      processingHistory: Array<{
+        videoId: string;
+        processedAt: string;
+        fileSize: number; // in MB
+        duration: number; // in seconds
+      }>;
+    };
+    // All-time stats
+    totalProcessed: number;
+    lastProcessedAt?: string;
+  };
+  
   featureDiscovery?: { // Features the user has discovered and used
     [feature: string]: {
       discovered: boolean;

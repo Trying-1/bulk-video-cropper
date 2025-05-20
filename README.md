@@ -12,6 +12,7 @@ A powerful web application for cropping and processing videos for social media p
 - User account creation and management
 - Enhanced user onboarding and workflow guidance
 - Basic usage analytics
+- Internet connection monitoring for secure processing
 
 ## Future Premium Features
 
@@ -27,6 +28,11 @@ A powerful web application for cropping and processing videos for social media p
 - React
 - TypeScript
 - Tailwind CSS
+- FFmpeg.js for video processing
+
+## Requirements
+
+- **Internet Connection**: An active internet connection is required for video processing operations to ensure proper credit tracking and prevent unauthorized usage.
 
 ## Getting Started
 

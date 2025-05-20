@@ -18,6 +18,13 @@ This directory contains documentation for the Bulk Video Cropper application. Ea
   - How to modify app settings
   - Best practices
 
+- [offline-processing.md](offline-processing.md) 🆕
+  - Internet connection requirements
+  - Connection monitoring implementation
+  - Offline handling behavior
+  - User experience considerations
+  - Rationale for connection requirements
+
 ## Security Documentation
 
 - [security-guide.md](security-guide.md) 🆕

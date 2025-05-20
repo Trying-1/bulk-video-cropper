@@ -51,6 +51,23 @@ service cloud.firestore {
       allow read, write: if isAdminByEmail();
     }
     
+    // Testimonials - Users can create and read their own, admins can manage all testimonials
+    match /testimonials/{testimonialId} {
+      // Anyone can read approved testimonials
+      allow read: if resource.data.approved == true || 
+                    (request.auth != null && resource.data.userId == request.auth.uid) || 
+                    isAdminByEmail();
+      // Anyone can create testimonials
+      allow create: if request.auth != null;
+      // Users can update their own unapproved testimonials, admins can update any
+      allow update: if (request.auth != null && 
+                      resource.data.userId == request.auth.uid && 
+                      resource.data.approved == false) || 
+                     isAdminByEmail();
+      // Only admins can delete testimonials
+      allow delete: if isAdminByEmail();
+    }
+    
     // Daily User Activity
     match /dailyActivity/{document=**} {
       allow read, write: if isAdminByEmail();

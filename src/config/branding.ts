@@ -13,6 +13,45 @@ export const APP_IDENTITY = {
   version: '1.0.0',
 };
 
+// Domain and URLs
+export const APP_URLS = {
+  domain: 'bulkvideocropper.com',
+  baseUrl: 'https://bulkvideocropper.com',
+  apiBase: 'https://bulkvideocropper.com/api',
+  appBase: 'https://app.bulkvideocropper.com',
+  landingPage: 'https://bulkvideocropper.com',
+  contactPage: 'https://bulkvideocropper.com/contact',
+};
+
+// Email addresses
+export const APP_EMAILS = {
+  support: 'support@bulkvideocropper.com',
+  info: 'info@bulkvideocropper.com',
+  press: 'press@bulkvideocropper.com',
+  business: 'business@bulkvideocropper.com',
+  privacy: 'privacy@bulkvideocropper.com',
+  admin: 'admin@bulkvideocropper.com',
+  developers: 'developers@bulkvideocropper.com',
+};
+
+// Product information
+export const PRODUCT = {
+  features: [
+    'Bulk video processing',
+    'Multiple aspect ratios',
+    'Custom crop settings',
+    'Social media optimizations',
+    'High-quality output',
+    'No watermarks',
+  ],
+  benefits: [
+    'Save time with batch processing',
+    'Perfect for content creators',
+    'Optimize videos for any platform',
+    'No technical skills required',
+  ],
+};
+
 // Logo paths and image assets
 export const LOGO = {
   primary: '/assets/logo.svg',
@@ -32,7 +71,7 @@ export const SOCIAL_MEDIA = {
   },
   instagram: {
     handle: '@bulkvidcropper',
-    url: 'https://instagram.com/bulkvidcropper',
+    url: 'https://instagram.com/bulkvideocropper',
   },
   youtube: {
     url: 'https://youtube.com/c/bulkvidcropper',
