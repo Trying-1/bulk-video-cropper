@@ -6,6 +6,14 @@ function isOnline(): boolean {
   return typeof navigator !== 'undefined' && navigator.onLine;
 }
 
+// Function to detect if running on a mobile device
+function isMobileDevice(): boolean {
+  if (typeof navigator !== 'undefined') {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  }
+  return false;
+}
+
 // Global cancellation flag
 let isCancelled = false;
 
@@ -230,17 +238,55 @@ export const cropVideo = async (
       throw new Error('Processing cancelled');
     }
     
-    // Build FFmpeg command for cropping with optimized settings for speed
-    const ffmpegArgs = [
-      '-i', inputFileName,
-      '-vf', `crop=${cropParams.width}:${cropParams.height}:${cropParams.x}:${cropParams.y}`,
-      '-c:v', 'libx264',
-      '-preset', 'ultrafast',  // Use ultrafast preset for maximum speed
-      '-crf', '28'             // Use a higher CRF value for faster processing
-    ];
+    // Check if we're on a mobile device for more aggressive optimization
+    const isMobile = isMobileDevice();
     
-    // Add audio copy and output filename
-    ffmpegArgs.push('-c:a', 'copy', outputFileName);
+    // Log device type for debugging
+    console.log(`Processing on ${isMobile ? 'mobile device' : 'desktop'}`);  
+    
+    // For mobile devices, we'll use more aggressive optimizations
+    let ffmpegArgs = [];
+    
+    if (isMobile) {
+      // Mobile optimization: lower resolution, faster encoding, higher compression
+      const scaleFactor = 0.75; // Scale down by 25% on mobile
+      const targetWidth = Math.floor(cropParams.width * scaleFactor);
+      const targetHeight = Math.floor(cropParams.height * scaleFactor);
+      
+      ffmpegArgs = [
+        '-i', inputFileName,
+        '-vf', `crop=${cropParams.width}:${cropParams.height}:${cropParams.x}:${cropParams.y},scale=${targetWidth}:${targetHeight}`,
+        '-c:v', 'libx264',
+        '-preset', 'ultrafast',  // Use ultrafast preset for maximum speed
+        '-crf', '32',           // Use an even higher CRF value for mobile (more compression)
+        '-tune', 'fastdecode',   // Optimize for fast decoding on mobile
+        '-movflags', '+faststart', // Optimize for faster playback start
+        '-max_muxing_queue_size', '9999', // Prevent muxing errors
+        '-b:v', '500k'           // Limit bitrate for faster processing
+      ];
+    } else {
+      // Desktop optimization: better quality, still reasonably fast
+      ffmpegArgs = [
+        '-i', inputFileName,
+        '-vf', `crop=${cropParams.width}:${cropParams.height}:${cropParams.x}:${cropParams.y}`,
+        '-c:v', 'libx264',
+        '-preset', 'veryfast',  // Slightly better quality than ultrafast
+        '-crf', '26',           // Slightly better quality for desktop
+        '-movflags', '+faststart' // Optimize for faster playback start
+      ];
+    }
+    
+    // Add audio processing based on device type
+    if (isMobile) {
+      // Compress audio for mobile
+      ffmpegArgs.push('-c:a', 'aac', '-b:a', '64k');
+    } else {
+      // Just copy audio for desktop (faster)
+      ffmpegArgs.push('-c:a', 'copy');
+    }
+    
+    // Add output filename
+    ffmpegArgs.push(outputFileName);
     
     // Check internet connection before processing
     if (!isOnline()) {

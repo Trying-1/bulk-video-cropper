@@ -815,20 +815,22 @@ function EditorContent() {
   useEffect(() => {
     if (!cropMode) return;
     
+    // Save current scroll position
+    const scrollY = window.scrollY;
+    
     // Save current body style
     const originalStyle = document.body.style.cssText;
-    const originalOverflow = document.documentElement.style.overflow;
-    const originalPosition = document.body.style.position;
-    const originalHeight = document.body.style.height;
     const originalTouchAction = document.body.style.touchAction;
     
-    // Disable scrolling on the body and html element
-    document.body.style.overflow = 'hidden';
-    document.documentElement.style.overflow = 'hidden';
-    document.body.style.position = 'fixed';
-    document.body.style.height = '100%';
-    document.body.style.width = '100%';
-    document.body.style.touchAction = 'none';
+    // Instead of completely disabling scrolling, we'll just make the crop area use touch-none
+    // This allows scrolling to reach the exit button if needed
+    const cropArea = document.querySelector('.crop-area-container');
+    if (cropArea) {
+      cropArea.setAttribute('style', 'touch-action: none;');
+    }
+    
+    // Only prevent touchmove events on the crop area itself, not the entire document
+    document.body.style.touchAction = 'pan-y';  // Allow vertical scrolling
     
     // This handler will be applied to the entire document
     const preventTouchMove = (e: TouchEvent) => {
@@ -844,10 +846,13 @@ function EditorContent() {
     return () => {
       // Restore original styles
       document.body.style.cssText = originalStyle;
-      document.documentElement.style.overflow = originalOverflow;
-      document.body.style.position = originalPosition;
-      document.body.style.height = originalHeight;
       document.body.style.touchAction = originalTouchAction;
+      
+      // Reset crop area touch action
+      const cropArea = document.querySelector('.crop-area-container');
+      if (cropArea) {
+        cropArea.removeAttribute('style');
+      }
       
       // Remove event listener
       document.removeEventListener('touchmove', preventTouchMove);
@@ -1358,15 +1363,26 @@ function EditorContent() {
                         </div>
                       </div>
                       {cropMode && (
-                        <div 
-                          className="absolute inset-0 bg-transparent z-10"
-                          onMouseDown={handleMouseDown}
-                          onMouseMove={handleMouseMove}
-                          onMouseUp={handleMouseUp}
-                          onTouchStart={handleTouchStart}
-                          onTouchMove={handleTouchMove}
-                          onTouchEnd={handleTouchEnd}
-                        ></div>
+                        <>
+                          <div 
+                            className="absolute inset-0 bg-transparent z-10 crop-area-container"
+                            onMouseDown={handleMouseDown}
+                            onMouseMove={handleMouseMove}
+                            onMouseUp={handleMouseUp}
+                            onTouchStart={handleTouchStart}
+                            onTouchMove={handleTouchMove}
+                            onTouchEnd={handleTouchEnd}
+                          ></div>
+                          
+                          {/* Mobile-friendly Done button to exit crop mode */}
+                          <button
+                            onClick={() => setCropMode(false)}
+                            className="absolute top-4 right-4 z-30 bg-teal-600 text-white rounded-full px-4 py-2 shadow-lg font-bold"
+                            style={{ fontSize: '16px' }}
+                          >
+                            Done
+                          </button>
+                        </>
                       )}
                       {currentVideo.cropSettings.width > 0 && currentVideo.cropSettings.height > 0 && (
                         <div 
