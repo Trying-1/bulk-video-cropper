@@ -18,12 +18,19 @@ This directory contains documentation for the Bulk Video Cropper application. Ea
   - How to modify app settings
   - Best practices
 
-- [offline-processing.md](offline-processing.md) 🆕
+- [offline-processing.md](offline-processing.md)
   - Internet connection requirements
   - Connection monitoring implementation
   - Offline handling behavior
   - User experience considerations
   - Rationale for connection requirements
+
+- [mobile-support.md](mobile-support.md) 🆕
+  - Touch-based cropping interface
+  - Mobile-optimized video processing
+  - Responsive design considerations
+  - Device compatibility information
+  - Mobile-specific UI enhancements
 
 ## Security Documentation
 

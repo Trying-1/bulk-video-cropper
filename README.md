@@ -1,6 +1,6 @@
 # Bulk Video Cropper MVP
 
-A powerful web application for cropping and processing videos for social media platforms. This is currently in MVP (Minimum Viable Product) release with premium features prepared but disabled for initial release.
+A powerful web application for cropping and processing videos for social media platforms. This application works seamlessly on both desktop and mobile devices, allowing users to efficiently prepare videos for various social media platforms.
 
 ## Current MVP Features
 
@@ -13,6 +13,9 @@ A powerful web application for cropping and processing videos for social media p
 - Enhanced user onboarding and workflow guidance
 - Basic usage analytics
 - Internet connection monitoring for secure processing
+- Full mobile touch support for video cropping
+- Responsive design for all device sizes
+- Cross-platform video processing
 
 ## Future Premium Features
 
