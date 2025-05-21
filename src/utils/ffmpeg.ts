@@ -238,55 +238,27 @@ export const cropVideo = async (
       throw new Error('Processing cancelled');
     }
     
-    // Check if we're on a mobile device for more aggressive optimization
+    // Log device info for debugging
     const isMobile = isMobileDevice();
-    
-    // Log device type for debugging
     console.log(`Processing on ${isMobile ? 'mobile device' : 'desktop'}`);  
     
-    // For mobile devices, we'll use more aggressive optimizations
-    let ffmpegArgs = [];
+    // IMPORTANT: Using safe settings that work reliably on all devices
+    // We had issues with empty videos on mobile with more aggressive settings
+    const ffmpegArgs = [
+      '-i', inputFileName,
+      '-vf', `crop=${cropParams.width}:${cropParams.height}:${cropParams.x}:${cropParams.y}`,
+      '-c:v', 'libx264', 
+      '-preset', 'ultrafast',  // Fast processing on all devices
+      '-crf', '28',           // Reasonable compression that preserves quality
+      '-c:a', 'copy',         // Just copy audio (most reliable)
+      '-movflags', '+faststart', // Help with streaming playback
+      outputFileName
+    ];
     
-    if (isMobile) {
-      // Mobile optimization: lower resolution, faster encoding, higher compression
-      const scaleFactor = 0.75; // Scale down by 25% on mobile
-      const targetWidth = Math.floor(cropParams.width * scaleFactor);
-      const targetHeight = Math.floor(cropParams.height * scaleFactor);
-      
-      ffmpegArgs = [
-        '-i', inputFileName,
-        '-vf', `crop=${cropParams.width}:${cropParams.height}:${cropParams.x}:${cropParams.y},scale=${targetWidth}:${targetHeight}`,
-        '-c:v', 'libx264',
-        '-preset', 'ultrafast',  // Use ultrafast preset for maximum speed
-        '-crf', '32',           // Use an even higher CRF value for mobile (more compression)
-        '-tune', 'fastdecode',   // Optimize for fast decoding on mobile
-        '-movflags', '+faststart', // Optimize for faster playback start
-        '-max_muxing_queue_size', '9999', // Prevent muxing errors
-        '-b:v', '500k'           // Limit bitrate for faster processing
-      ];
-    } else {
-      // Desktop optimization: better quality, still reasonably fast
-      ffmpegArgs = [
-        '-i', inputFileName,
-        '-vf', `crop=${cropParams.width}:${cropParams.height}:${cropParams.x}:${cropParams.y}`,
-        '-c:v', 'libx264',
-        '-preset', 'veryfast',  // Slightly better quality than ultrafast
-        '-crf', '26',           // Slightly better quality for desktop
-        '-movflags', '+faststart' // Optimize for faster playback start
-      ];
-    }
-    
-    // Add audio processing based on device type
-    if (isMobile) {
-      // Compress audio for mobile
-      ffmpegArgs.push('-c:a', 'aac', '-b:a', '64k');
-    } else {
-      // Just copy audio for desktop (faster)
-      ffmpegArgs.push('-c:a', 'copy');
-    }
-    
-    // Add output filename
-    ffmpegArgs.push(outputFileName);
+    // Add debug info
+    console.log(`FFmpeg command: ffmpeg ${ffmpegArgs.join(' ')}`);
+    console.log(`Crop dimensions: ${cropParams.width}x${cropParams.height}`);
+    console.log(`Original video dimensions: ${videoDimensions.width}x${videoDimensions.height}`);
     
     // Check internet connection before processing
     if (!isOnline()) {
