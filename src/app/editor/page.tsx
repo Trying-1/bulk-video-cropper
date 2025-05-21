@@ -461,8 +461,9 @@ function EditorContent() {
   const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
     if (!cropMode || !currentVideo) return;
     
-    // Prevent scrolling while cropping
+    // Prevent scrolling while cropping - must prevent default on all touch events
     e.preventDefault();
+    e.stopPropagation();
     
     // Get the position relative to the container
     const rect = e.currentTarget.getBoundingClientRect();
@@ -670,6 +671,7 @@ function EditorContent() {
     
     // Prevent scrolling while cropping
     e.preventDefault();
+    e.stopPropagation();
     
     // Get the position relative to the container
     const rect = e.currentTarget.getBoundingClientRect();
@@ -808,6 +810,49 @@ function EditorContent() {
     setCropStartPosition(null);
     setResizeMode(null);
   };
+  
+  // Prevent document scrolling when in crop mode
+  useEffect(() => {
+    if (!cropMode) return;
+    
+    // Save current body style
+    const originalStyle = document.body.style.cssText;
+    const originalOverflow = document.documentElement.style.overflow;
+    const originalPosition = document.body.style.position;
+    const originalHeight = document.body.style.height;
+    const originalTouchAction = document.body.style.touchAction;
+    
+    // Disable scrolling on the body and html element
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    document.body.style.height = '100%';
+    document.body.style.width = '100%';
+    document.body.style.touchAction = 'none';
+    
+    // This handler will be applied to the entire document
+    const preventTouchMove = (e: TouchEvent) => {
+      if (cropMode) {
+        e.preventDefault();
+      }
+    };
+    
+    // Add event listener with passive: false to allow preventDefault
+    document.addEventListener('touchmove', preventTouchMove, { passive: false });
+    
+    // Cleanup function
+    return () => {
+      // Restore original styles
+      document.body.style.cssText = originalStyle;
+      document.documentElement.style.overflow = originalOverflow;
+      document.body.style.position = originalPosition;
+      document.body.style.height = originalHeight;
+      document.body.style.touchAction = originalTouchAction;
+      
+      // Remove event listener
+      document.removeEventListener('touchmove', preventTouchMove);
+    };
+  }, [cropMode]);
   
   const handleMouseUp = () => {
     setCropStartPosition(null);
