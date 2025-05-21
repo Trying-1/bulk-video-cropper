@@ -1977,6 +1977,23 @@ function EditorContent() {
                     <li>Download the processed videos when ready</li>
                   </ol>
                 </div>
+                {/* Google AdSense Ad - bottom of editor page */}
+                <div className="flex justify-center my-8">
+                  <ins className="adsbygoogle"
+                    style={{ display: "block" }}
+                    data-ad-client="ca-pub-5829296907403264"
+                    data-ad-slot="4667047861"
+                    data-ad-format="auto"
+                    data-full-width-responsive="true"
+                  ></ins>
+                </div>
+                <script
+                  dangerouslySetInnerHTML={{
+                    __html: `
+                      (adsbygoogle = window.adsbygoogle || []).push({});
+                    `,
+                  }}
+                />
               </div>
             </div>
           </div>
