@@ -25,7 +25,7 @@ interface SubscriptionFeatureGuardProps {
 }
 
 /**
- * Component that protects premium features based on subscription
+ * Component that conditionally enables features based on availability
  * Maintains a clean interface without popups or guides
  */
 const SubscriptionFeatureGuard: React.FC<SubscriptionFeatureGuardProps> = ({
@@ -57,10 +57,10 @@ const SubscriptionFeatureGuard: React.FC<SubscriptionFeatureGuardProps> = ({
 };
 
 /**
- * Premium feature button that shows a subtle upgrade option instead of a popup
- * Provides a non-intrusive way to guide users to premium features
+ * Feature availability button that shows when a feature is coming soon
+ * Provides a non-intrusive way to guide users
  */
-export const PremiumFeatureButton: React.FC<{
+export const ComingSoonFeatureButton: React.FC<{
   feature: string;
   onClick: () => void;
   className?: string;
@@ -76,7 +76,7 @@ export const PremiumFeatureButton: React.FC<{
         <button 
           className={`opacity-50 cursor-not-allowed flex items-center gap-2 ${className}`}
           disabled
-          title="Premium feature"
+          title="Coming soon"
         >
           {icon}
           <span className="relative">
@@ -127,11 +127,9 @@ export const SubscriptionLimitsInfo: React.FC<{
         <span className="font-medium">Max Duration:</span>
         <span>{hasExtendedDuration ? '5 min' : '1 min'}</span>
       </div>
-      {!hasNoWatermark && (
-        <div className="text-xs text-gray-400 mt-1">
-          Free videos include a small watermark
-        </div>
-      )}
+      <div className="text-xs text-gray-400 mt-1">
+        Videos may include a small watermark
+      </div>
     </div>
   );
 };

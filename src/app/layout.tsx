@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import { APP_IDENTITY, APP_URLS } from '@/config/branding'
-import Head from "next/head";
+import { usePathname } from 'next/navigation'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -39,6 +39,7 @@ export const metadata: Metadata = {
 import { Providers } from '@/contexts/Providers';
 import ClientNavigation from '../components/ClientNavigation';
 import ErrorBoundary from '@/components/ErrorBoundary';
+import ConditionalFooter from '@/components/ConditionalFooter';
 import dynamic from 'next/dynamic';
 
 // Dynamically import CookieConsent with no SSR to avoid hydration mismatch
@@ -59,41 +60,19 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <Head>
-        <script
-          async
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5829296907403264"
-          crossOrigin="anonymous"
-        ></script>
-      </Head>
       <body className={inter.className}>
         <Providers>
           <ErrorBoundary>
             {/* Hide navigation on admin pages */}
             <ClientNavigation />
-            {/* Google AdSense Ad - below navbar */}
-            <div className="flex justify-center my-4">
-              <ins className="adsbygoogle"
-                style={{ display: "block" }}
-                data-ad-client="ca-pub-5829296907403264"
-                data-ad-slot="2086176049"
-                data-ad-format="auto"
-                data-full-width-responsive="true"
-              ></ins>
-            </div>
-            <script
-              dangerouslySetInnerHTML={{
-                __html: `
-                  (adsbygoogle = window.adsbygoogle || []).push({});
-                `,
-              }}
-            />
             {/* All guide popups removed for cleaner user experience */}
             <main className="min-h-screen bg-gray-50 dark:bg-gray-900 pt-0">
               <ErrorBoundary>
                 {children}
               </ErrorBoundary>
             </main>
+            {/* Conditional footer - hidden on auth, editor, and profile pages */}
+            <ConditionalFooter />
             {/* Cookie consent banner for first-time visitors */}
             <CookieConsent />
           </ErrorBoundary>

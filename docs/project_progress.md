@@ -89,6 +89,14 @@ Converting the desktop Bulk Video Cropper application into a professional, monet
 - Marketing approach for initial launch
 
 ## Recent Updates
+- **May 23, 2025**: Enhanced authentication and UI consistency:
+  - Implemented email verification flow for new and existing users
+  - Created dedicated email verification page
+  - Removed Google authentication for simplified authentication flow
+  - Removed duplicate footers across all pages for better consistency
+  - Implemented global footer in root layout
+  - Removed 'All Legal Docs' link from footer
+
 - **May 19, 2025**: Enhanced legal and information pages:
   - Improved Privacy Policy, Terms of Service, and Cookies Policy pages
   - Added floating side navigation bar for easy navigation between legal and information pages

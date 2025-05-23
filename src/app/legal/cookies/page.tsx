@@ -8,12 +8,12 @@ import { APP_EMAILS } from '@/config/branding';
 
 export default function CookiePolicy() {
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="flex flex-col">
       {/* Floating Side Navigation */}
       <LegalSideNav />
       
       {/* Main Content */}
-      <div className="flex-grow bg-gray-50 py-12">
+      <div className="bg-gray-50 py-12">
         <div className="max-w-4xl mx-auto px-6 bg-white rounded-lg shadow-lg p-8">
           {/* Header */}
           <div className="border-b border-gray-200 pb-6 mb-8">
@@ -48,16 +48,13 @@ export default function CookiePolicy() {
             <section id="how" className="p-4 border-l-4 border-teal-500 bg-gray-50">
               <h2 className="text-2xl font-bold text-gray-800 mb-4">2. How We Use Cookies</h2>
               <p className="text-gray-700 mb-3">
-                Bulk Video Cropper uses cookies to enhance your experience on our platform, remember your preferences, and understand 
-                how you interact with our video processing services. We use cookies for the following purposes:
+                Bulk Video Cropper uses cookies to enhance your experience on our video editing platform. We use cookies for the following purposes:
               </p>
               <ul className="list-disc pl-6 text-gray-700 space-y-1">
                 <li>To keep you logged in during your session</li>
-                <li>To remember your video processing preferences</li>
+                <li>To remember your video editing preferences</li>
                 <li>To maintain your selected export settings</li>
-                <li>To track your subscription usage and limits</li>
-                <li>To analyze how our video processing tools are used</li>
-                <li>To personalize your experience based on past usage</li>
+                <li>To analyze how our video editing tools are used</li>
               </ul>
             </section>
             
@@ -95,7 +92,7 @@ export default function CookiePolicy() {
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">3.3 Analytical Cookies</h3>
                 <p className="text-gray-700 mb-3">
                   Analytical cookies help us understand how users interact with Bulk Video Cropper. They provide insights into 
-                  video processing patterns, tool usage, and performance metrics to help us improve the application.
+                  video processing patterns and tool usage to help us improve the application's functionality and user experience.
                 </p>
                 <div className="bg-white p-3 rounded border border-gray-200 mb-2">
                   <p className="text-gray-600"><strong>_ga</strong>: Used by Google Analytics to distinguish users</p>
@@ -132,15 +129,20 @@ export default function CookiePolicy() {
                 If you have any questions about our use of cookies, please contact us at:
               </p>
               <div className="bg-white p-4 rounded border border-gray-200">
-                <p className="text-gray-700"><strong>Email:</strong> {APP_EMAILS.privacy}</p>
-                <p className="text-gray-700"><strong>Address:</strong> 123 Video Lane, San Francisco, CA 94103, USA</p>
+                <p className="text-gray-700">
+                  <strong>Email: </strong>
+                  <a 
+                    href={`mailto:${APP_EMAILS.support}`}
+                    className="text-teal-600 hover:text-teal-800 hover:underline"
+                  >
+                    {APP_EMAILS.support}
+                  </a>
+                </p>
               </div>
             </section>
           </div>
         </div>
       </div>
-      
-      <Footer />
     </div>
   );
 }

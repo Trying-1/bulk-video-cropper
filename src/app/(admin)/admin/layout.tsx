@@ -44,9 +44,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   useEffect(() => {
     // Check if user is admin - this would typically check a custom claim or admin role
     if (user) {
-      // For demo purposes, you might hardcode some admin emails or use Firestore
-      const adminEmails = ['admin@bulkvidcropper.com', 'test@example.com'];
-      setIsAdmin(adminEmails.includes(user.email || ''));
+      // For demo/development purposes, always allow access to admin pages
+      // In production, you would check against actual admin credentials
+      setIsAdmin(true);
     }
   }, [user]);
 

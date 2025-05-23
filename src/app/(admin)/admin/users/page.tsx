@@ -12,11 +12,8 @@ interface ExtendedUser {
   id: string;
   email?: string;
   displayName?: string;
-  subscription?: 'free' | 'premium' | 'pro';
   createdAt: Date;
   formattedDate?: string;
-  stripeCustomerId?: string;
-  stripeSubscriptionId?: string;
 }
 
 function UsersPage() {
@@ -24,10 +21,8 @@ function UsersPage() {
   const [filteredUsers, setFilteredUsers] = useState<ExtendedUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [subscriptionFilter, setSubscriptionFilter] = useState('all');
   const [lastVisible, setLastVisible] = useState<any>(null);
   const [hasMore, setHasMore] = useState(true);
-  const [updatingUser, setUpdatingUser] = useState<string | null>(null);
   const PAGE_SIZE = 10;
 
   useEffect(() => {
@@ -35,22 +30,18 @@ function UsersPage() {
   }, []);
 
   useEffect(() => {
-    // Apply filters whenever search term or subscription filter changes
+    // Apply filters whenever search term changes
     const filtered = users.filter(user => {
       const matchesSearch = 
         searchTerm === '' || 
         user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         user.id.toLowerCase().includes(searchTerm.toLowerCase());
       
-      const matchesSubscription = 
-        subscriptionFilter === 'all' || 
-        user.subscription === subscriptionFilter;
-      
-      return matchesSearch && matchesSubscription;
+      return matchesSearch;
     });
     
     setFilteredUsers(filtered);
-  }, [searchTerm, subscriptionFilter, users]);
+  }, [searchTerm, users]);
 
   const fetchUsers = async (getMore = false) => {
     try {
@@ -121,57 +112,7 @@ function UsersPage() {
     }
   };
 
-  const updateUserSubscription = async (userId: string, newSubscription: 'free' | 'premium' | 'pro') => {
-    try {
-      setUpdatingUser(userId);
-      
-      // Get current user's ID token
-      const idToken = await auth.currentUser?.getIdToken();
-      if (!idToken) {
-        throw new Error('Not authenticated');
-      }
-      
-      // Call secure API endpoint
-      const response = await fetch('/api/admin/users/update-subscription', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${idToken}`
-        },
-        body: JSON.stringify({ userId, subscription: newSubscription })
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to update subscription');
-      }
-      
-      // Update the user in the state
-      setUsers(prevUsers => 
-        prevUsers.map(user => 
-          user.id === userId ? { ...user, subscription: newSubscription } : user
-        )
-      );
-      
-      toast.success(`User's subscription updated to ${newSubscription}`);
-      setUpdatingUser(null);
-    } catch (error) {
-      console.error('Error updating user subscription:', error);
-      toast.error(`Failed to update subscription: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      setUpdatingUser(null);
-    }
-  };
 
-  // Wrapper function that validates subscription type
-  const handleUpdateSubscription = (userId: string, value: string) => {
-    // Validate the subscription value is one of the allowed types
-    if (value === 'free' || value === 'premium' || value === 'pro') {
-      updateUserSubscription(userId, value);
-    } else {
-      console.error('Invalid subscription type:', value);
-      alert('Invalid subscription type. Please select a valid option.');
-    }
-  };
 
   return (
     // CSRF protection token is handled by Next.js middleware
@@ -200,34 +141,16 @@ function UsersPage() {
               aria-label="Search users by email or ID"
             />
           </div>
-          <div>
-            <label htmlFor="subscription" className="block text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">
-              Subscription Type
-            </label>
-            <select
-              id="subscription"
-              className={adminStyles.select}
-              value={subscriptionFilter}
-              onChange={(e) => setSubscriptionFilter(e.target.value)}
-              aria-label="Filter by subscription type"
-            >
-              <option value="all" className={adminStyles.option}>All Subscriptions</option>
-              <option value="free" className={adminStyles.option}>Free</option>
-              <option value="premium" className={adminStyles.option}>Premium</option>
-              <option value="pro" className={adminStyles.option}>Pro</option>
-            </select>
-          </div>
           <div className="flex items-end">
             <button
               onClick={() => {
                 setSearchTerm('');
-                setSubscriptionFilter('all');
                 fetchUsers();
               }}
               className={adminStyles.secondaryButton}
-              aria-label="Reset all filters and search"
+              aria-label="Reset search and refresh users"
             >
-              Reset Filters
+              Reset & Refresh
             </button>
           </div>
         </div>
@@ -246,9 +169,7 @@ function UsersPage() {
                   <th scope="col" className={adminStyles.tableHeaderCell}>
                     Joined
                   </th>
-                  <th scope="col" className={adminStyles.tableHeaderCell}>
-                    Subscription
-                  </th>
+
                   <th scope="col" className={adminStyles.tableHeaderCell}>
                     Status
                   </th>
@@ -293,32 +214,7 @@ function UsersPage() {
                       <td className={adminStyles.tableCell}>
                         <div className="text-sm text-gray-800 dark:text-gray-200">{user.formattedDate}</div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <span 
-                            className={user.subscription === 'pro' 
-                              ? adminStyles.statusPill.pro 
-                              : user.subscription === 'premium' 
-                              ? adminStyles.statusPill.premium 
-                              : adminStyles.statusPill.free}
-                            aria-label={`Current subscription: ${user.subscription ? (user.subscription.charAt(0).toUpperCase() + user.subscription.slice(1)) : 'Free'}`}
-                          >
-                            {user.subscription ? (user.subscription.charAt(0).toUpperCase() + user.subscription.slice(1)) : 'Free'}
-                          </span>
-                          <div className="ml-2">
-                            <select
-                              className={adminStyles.select + " text-xs p-1"}
-                              value={user.subscription || 'free'}
-                              onChange={(e) => handleUpdateSubscription(user.id, e.target.value)}
-                              aria-label={`Change subscription for ${user.email}`}
-                            >
-                              <option value="free" className={adminStyles.option}>Free</option>
-                              <option value="premium" className={adminStyles.option}>Premium</option>
-                              <option value="pro" className={adminStyles.option}>Pro</option>
-                            </select>
-                          </div>
-                        </div>
-                      </td>
+
                       <td className={adminStyles.tableCell}>
                         <span className={adminStyles.statusPill.active} aria-label="User status: Active">
                           Active

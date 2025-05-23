@@ -85,13 +85,13 @@ const BatchProcessingControl: React.FC<BatchProcessingControlProps> = ({
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
               </svg>
               Process All Videos
-              <span className="text-xs text-yellow-600 bg-yellow-100 px-1.5 py-0.5 rounded-full ml-1">Premium</span>
+              <span className="text-xs text-blue-600 bg-blue-100 px-1.5 py-0.5 rounded-full ml-1">Coming Soon</span>
             </button>
             
             {/* Simple non-intrusive message if they attempt to use the feature */}
             {attemptedBatchAsNonPremium && (
               <div className="mt-2 text-sm text-gray-600">
-                Batch processing is a premium feature. Process videos individually instead.
+                Batch processing is coming soon! For now, please process videos individually.
               </div>
             )}
           </div>

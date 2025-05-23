@@ -297,61 +297,6 @@ export default function Profile() {
 
           {/* Main profile content */}
           <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Subscription Info */}
-            {loadingState.stats ? (
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden">
-                <div className="p-6">
-                  <Skeleton className="h-6 w-48 mb-4 rounded-lg" />
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <Skeleton className="h-4 w-24" />
-                      <Skeleton className="h-4 w-24 rounded-full" />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <Skeleton className="h-4 w-24" />
-                      <Skeleton className="h-4 w-24" />
-                    </div>
-                    <Skeleton className="h-2 w-full rounded-full" />
-                    <div className="flex items-center justify-between">
-                      <Skeleton className="h-4 w-24" />
-                      <Skeleton className="h-4 w-24" />
-                    </div>
-                  </div>
-                  <Skeleton className="h-10 w-full rounded-md mt-4" />
-                </div>
-              </div>
-            ) : (
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden">
-                <div className="p-6">
-                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                    Subscription
-                  </h2>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-600 dark:text-gray-300">Current Plan</span>
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${userData?.subscription === 'free' ? 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300' : userData?.subscription === 'premium' ? 'bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-300' : 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300'}`}>
-                        {userData?.subscription === 'free' ? 'Free' : userData?.subscription === 'premium' ? 'Premium' : 'Pro'}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-600 dark:text-gray-300">Renews in</span>
-                      <span className="font-semibold text-gray-900 dark:text-white">
-                        {userData?.nextRenewal ? getDaysUntilRenewal() : 'N/A'} days
-                      </span>
-                    </div>
-                    {userData?.subscription === 'free' && (
-                      <Link
-                        href="/#pricing"
-                        className="mt-4 block w-full text-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
-                      >
-                        Upgrade Plan
-                      </Link>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
 
             {/* Stats */}
             {loadingState.stats ? (

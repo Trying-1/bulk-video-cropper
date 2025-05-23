@@ -35,9 +35,13 @@ import { APP_IDENTITY, SOCIAL_MEDIA } from '@/config/branding';
 
 function Footer() {
   return (
-    <footer>
-      <p>{APP_IDENTITY.copyright}</p>
-      <a href={SOCIAL_MEDIA.twitter.url}>Twitter</a>
+    <footer className="bg-gray-900 text-gray-400 py-12">
+      <div className="container mx-auto px-4">
+        {/* Footer content with branding from config */}
+        <div className="border-t border-gray-800 mt-8 pt-8 text-center">
+          <p className="text-sm">{APP_IDENTITY.copyright}</p>
+        </div>
+      </div>
     </footer>
   );
 }

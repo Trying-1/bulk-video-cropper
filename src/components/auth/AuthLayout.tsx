@@ -1,19 +1,19 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { signInUser, createUser, resetPassword } from '@/services/firebaseService';
+import { signInUser, createUser, resetPassword, sendVerificationEmail } from '@/services/firebaseService';
+import { getAuthErrorMessage } from '@/utils/authErrorHandler';
 import { User } from '@/types/user';
 import { createUser as createUserService } from '@/services/userService';
 import { auth } from '@/config/firebase';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { GoogleAuthProvider, signInWithRedirect, getRedirectResult } from 'firebase/auth';
+// Removed Google Auth imports
 import { toast } from 'react-hot-toast';
 import { useAuth } from '@/contexts/AuthContext';
 
-// Google provider instance
-const googleProvider = new GoogleAuthProvider();
+// Removed Google provider instance
 
 export default function AuthLayout() {
   const [email, setEmail] = useState('');
@@ -26,6 +26,8 @@ export default function AuthLayout() {
   const [forgotPassword, setForgotPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showVerificationMessage, setShowVerificationMessage] = useState(false);
+  const [verificationEmail, setVerificationEmail] = useState('');
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user } = useAuth();
@@ -65,38 +67,11 @@ export default function AuthLayout() {
       setIsFromFreeTier(true);
     }
     
-    // Check for redirect result only if we've just been redirected
-    // This avoids unnecessary auth checks on every page load
-    const checkRedirectResult = async () => {
-      // Check if we have a pending redirect - localStorage flag would be set before redirect
-      const hasPendingRedirect = localStorage.getItem('pendingGoogleRedirect') === 'true';
-      
-      if (hasPendingRedirect) {
-        setLoading(true);
-        try {
-          // Add timeout to avoid long waits
-          const resultPromise = getRedirectResult(auth);
-          const timeoutPromise = new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Authentication timed out')), 5000)
-          );
-          
-          const result = await Promise.race([resultPromise, timeoutPromise]);
-          if (result) {
-            console.log('Google sign-in successful');
-            localStorage.removeItem('pendingGoogleRedirect');
-            router.push('/profile');
-          }
-        } catch (error: any) {
-          console.error('Google redirect error:', error);
-          setError(error.message || 'Failed to sign in with Google');
-          localStorage.removeItem('pendingGoogleRedirect');
-        } finally {
-          setLoading(false);
-        }
-      }
-    };
-    
-    checkRedirectResult();
+    // Removed Google authentication redirect handling
+    // Clear any existing Google redirect flags
+    if (localStorage.getItem('pendingGoogleRedirect')) {
+      localStorage.removeItem('pendingGoogleRedirect');
+    }
   }, [router, searchParams]);
 
   const handleForgotPassword = async (e: React.FormEvent) => {
@@ -120,7 +95,7 @@ export default function AuthLayout() {
         setError(result.message);
       }
     } catch (err: any) {
-      toast.error(err.message || 'Failed to send password reset email');
+      toast.error(getAuthErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -145,9 +120,26 @@ export default function AuthLayout() {
     setPasswordStrength(calculatePasswordStrength(newPassword));
   };
   
+  const handleResendVerificationEmail = async () => {
+    setLoading(true);
+    try {
+      const result = await sendVerificationEmail();
+      if (result.success) {
+        toast.success('Verification email sent! Please check your inbox.');
+      } else {
+        toast.error(result.message);
+      }
+    } catch (error: any) {
+      toast.error(getAuthErrorMessage(error));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setShowVerificationMessage(false);
     
     // Check if terms are accepted for sign up or sign in
     if (!acceptTerms && !forgotPassword) {
@@ -183,10 +175,29 @@ export default function AuthLayout() {
         if (user) {
           await createUserService(user.uid, user.email, username);
         }
-        toast.success('Account created successfully! Please log in.');
-        router.push('/auth');
+        // Show verification message and remember the email for resending
+        setVerificationEmail(email);
+        setShowVerificationMessage(true);
+        toast.success('Account created successfully! Please verify your email.');
+        // Clear the form
+        setEmail('');
+        setPassword('');
+        setConfirmPassword('');
+        setUsername('');
+        setIsSignUp(false);
       } else {
         await signInUser(email, password);
+        
+        // Check if email is verified
+        const user = auth.currentUser;
+        if (user && !user.emailVerified) {
+          // Show verification message if email is not verified
+          setVerificationEmail(email);
+          setShowVerificationMessage(true);
+          setLoading(false);
+          return;
+        }
+        
         toast.success('Logged in successfully!');
         
         // Get the current URL before redirect
@@ -200,16 +211,13 @@ export default function AuthLayout() {
         }
       }
     } catch (err: any) {
-      toast.error(err.message || 'Authentication failed');
+      toast.error(getAuthErrorMessage(err));
     } finally {
       setLoading(false);
     }
   };
   
-  const handleGoogleSignIn = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    toast.error('Currently facing issues with Google sign-in. Please continue with email authentication.');
-  };
+  // Removed Google sign-in handler
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row overflow-hidden bg-gradient-to-br from-teal-50 via-white to-orange-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
@@ -444,17 +452,6 @@ export default function AuthLayout() {
                     Back to sign in
                   </button>
                 </p>
-              ) : isSignUp ? (
-                <p className="text-gray-600 dark:text-gray-300">
-                  Already have an account?{' '}
-                  <button
-                    type="button"
-                    onClick={() => setIsSignUp(false)}
-                    className="font-medium text-teal-600 hover:text-teal-500 dark:text-teal-400 dark:hover:text-teal-300"
-                  >
-                    Sign in instead
-                  </button>
-                </p>
               ) : (
                 <p className="text-gray-600 dark:text-gray-300">
                   Don't have an account?{' '}
@@ -472,6 +469,38 @@ export default function AuthLayout() {
             {error && (
               <div className="text-sm text-red-600 dark:text-red-400 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
                 {error}
+              </div>
+            )}
+
+            {showVerificationMessage && (
+              <div className="my-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                <div className="flex items-start">
+                  <div className="flex-shrink-0">
+                    <svg className="h-5 w-5 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <h3 className="text-sm font-medium text-blue-800 dark:text-blue-300">Email Verification Required</h3>
+                    <div className="mt-2 text-sm text-blue-700 dark:text-blue-400">
+                      <p>
+                        We've sent a verification email to <strong>{verificationEmail}</strong>. 
+                        Please check your inbox and click the verification link to activate your account.
+                      </p>
+                      <p className="mt-2">
+                        Didn't receive the email?{' '}
+                        <button
+                          type="button"
+                          onClick={handleResendVerificationEmail}
+                          disabled={loading}
+                          className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 underline"
+                        >
+                          {loading ? 'Sending...' : 'Resend verification email'}
+                        </button>
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
 
@@ -494,46 +523,9 @@ export default function AuthLayout() {
             </div>
           </form>
 
-          <div className="mt-6">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300 dark:border-gray-700"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-4 bg-white dark:bg-gray-900 text-gray-500 dark:text-gray-400">
-                  Or continue with
-                </span>
-              </div>
-            </div>
+          {/* Removed Google sign-in option */}
 
-            <div className="mt-6">
-              <button 
-                onClick={handleGoogleSignIn}
-                disabled={!acceptTerms || forgotPassword}
-                className={`w-full flex items-center justify-center gap-2 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium ${!acceptTerms || forgotPassword ? 'text-gray-400 dark:text-gray-500 cursor-not-allowed' : 'text-gray-700 dark:text-gray-300'} bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500`}
-                title={!acceptTerms ? 'Please accept the Terms of Service and Privacy Policy' : forgotPassword ? 'Not available for password reset' : ''}
-              >
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.38h-2.18C2.81 8.57 1.5 10.71 1.5 13c0 2.55 1.31 4.81 3.24 6.09l2.6-2.09z"/>
-                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.98 1.5 12 1.5c-3.87 0-7 3.13-7 7s3.13 7 7 7c1.34 0 2.6-.26 3.78-.7L17 19c-1.03.84-2.4 1.34-3.96 1.34-3.14 0-5.7-2.56-5.7-5.7s2.56-5.7 5.7-5.7z"/>
-                </svg>
-                Continue with Google
-              </button>
-            </div>
-          </div>
-
-          <div className="text-center text-sm text-gray-600 dark:text-gray-400 mt-6">
-            {isSignUp ? 'Already have an account?' : 'Don\'t have an account?'}{' '}
-            <button
-              type="button"
-              onClick={() => setIsSignUp(!isSignUp)}
-              className="font-medium text-teal-600 hover:text-teal-500 dark:text-teal-400 dark:hover:text-teal-300"
-            >
-              {isSignUp ? 'Sign in' : 'Sign up for free'}
-            </button>
-          </div>
+          {/* Toggle removed to avoid duplication with the link above */}
           
           {/* Continue without signup option - only shown when coming from free tier */}
           {isFromFreeTier && (

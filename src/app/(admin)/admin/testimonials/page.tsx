@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { db, auth } from '@/config/firebase';
-import { collection, getDocs, doc, updateDoc, deleteDoc, query, orderBy, Timestamp } from 'firebase/firestore';
+import { collection, getDocs, getDoc, doc, updateDoc, deleteDoc, query, orderBy, Timestamp } from 'firebase/firestore';
 import { adminStyles } from '../styles/adminStyles';
 import { saveToLocalStorage, getFromLocalStorage, getFromSessionStorage, saveToSessionStorage } from '@/utils/storageUtils';
 import { withAdminAuth } from '@/utils/withAdminAuth';
@@ -26,6 +26,7 @@ interface Testimonial {
   message: string;
   email: string;
   userId?: string;
+  rating?: number; // User rating (1-5 stars)
   approved: boolean;
   featured: boolean;
   createdAt: Date;
@@ -42,6 +43,7 @@ const mapTestimonialDoc = (doc: any): Testimonial => {
     message: data.message,
     email: data.email,
     userId: data.userId,
+    rating: data.rating, // Include rating if available
     approved: data.approved,
     featured: data.featured,
     createdAt: data.createdAt.toDate(),
@@ -52,19 +54,28 @@ const mapTestimonialDoc = (doc: any): Testimonial => {
 // Testimonial status filter options
 type StatusFilter = 'all' | 'pending' | 'approved' | 'featured';
 
+// Type guard for StatusFilter
+const isStatusFilter = (value: any): value is StatusFilter => {
+  return ['all', 'pending', 'approved', 'featured'].includes(value);
+};
+
 function TestimonialsAdminPage() {
   const router = useRouter();
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
   const [filteredTestimonials, setFilteredTestimonials] = useState<Testimonial[]>([]);
   const [loading, setLoading] = useState(true);
   // Initialize filters from localStorage if available
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>(() => {
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  
+  // Load saved filter from localStorage after component mounts
+  useEffect(() => {
     if (typeof window !== 'undefined') {
-      const savedFilter = getFromLocalStorage<StatusFilter>(STORAGE_KEYS.ADMIN_TESTIMONIALS_FILTER);
-      return savedFilter || 'all';
+      const savedFilter = getFromLocalStorage<string>(STORAGE_KEYS.ADMIN_TESTIMONIALS_FILTER);
+      if (savedFilter && isStatusFilter(savedFilter)) {
+        setStatusFilter(savedFilter);
+      }
     }
-    return 'all';
-  });
+  }, []);
   
   // Initialize search query from localStorage if available
   const [searchQuery, setSearchQuery] = useState<string>(() => {
@@ -277,43 +288,93 @@ function TestimonialsAdminPage() {
   const toggleFeatured = async (id: string, currentStatus: boolean) => {
     try {
       const testimonialRef = doc(db, 'testimonials', id);
+      const newStatus = !currentStatus;
+      
+      console.log(`Setting testimonial ${id} to featured=${newStatus}, approved=true`);
+      
+      // Force set both featured and approved status
       await updateDoc(testimonialRef, {
-        featured: !currentStatus,
+        featured: newStatus,
         approved: true, // Featured testimonials must be approved
         updatedAt: Timestamp.now()
       });
       
+      // Verify the update in the database
+      const updatedDoc = await getDoc(testimonialRef);
+      if (updatedDoc.exists()) {
+        const data = updatedDoc.data();
+        console.log(`Verification - Testimonial ${id} now has featured=${data.featured}, approved=${data.approved}`);
+      }
+      
       // Update local state
       const updatedTestimonials = testimonials.map(t => 
-        t.id === id ? { ...t, featured: !currentStatus, approved: true, updatedAt: new Date() } : t
+        t.id === id ? { ...t, featured: newStatus, approved: true, updatedAt: new Date() } : t
       );
       
       setTestimonials(updatedTestimonials);
       calculateAnalytics(updatedTestimonials);
-      toast.success(`Testimonial ${!currentStatus ? 'featured' : 'unfeatured'}`);
+      toast.success(`Testimonial ${newStatus ? 'featured' : 'unfeatured'}`);
+      
+      // Force a refresh of cached data
+      saveToLocalStorage('bvc_admin_testimonials_data', updatedTestimonials);
+      saveToLocalStorage('bvc_admin_testimonials_last_fetch', new Date().getTime());
     } catch (error) {
       console.error('Error toggling featured status:', error);
       toast.error('Failed to update testimonial');
     }
   };
 
-  // Delete a testimonial
-  const deleteTestimonial = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this testimonial? This action cannot be undone.')) {
-      return;
-    }
-    
+  // Update a testimonial's rating
+  const updateRating = async (id: string, newRating: number) => {
     try {
-      await deleteDoc(doc(db, 'testimonials', id));
+      const testimonialRef = doc(db, 'testimonials', id);
+      await updateDoc(testimonialRef, {
+        rating: newRating,
+        updatedAt: Timestamp.fromDate(new Date())
+      });
+      
+      toast.success(`Rating updated to ${newRating} stars`);
       
       // Update local state
-      const updatedTestimonials = testimonials.filter(t => t.id !== id);
+      const updatedTestimonials = testimonials.map(t => 
+        t.id === id ? { ...t, rating: newRating, updatedAt: new Date() } : t
+      );
       setTestimonials(updatedTestimonials);
-      calculateAnalytics(updatedTestimonials);
-      toast.success('Testimonial deleted');
+      setFilteredTestimonials(prevFiltered => 
+        prevFiltered.map(t => t.id === id ? { ...t, rating: newRating, updatedAt: new Date() } : t)
+      );
+      
+      // Update cache
+      saveToLocalStorage('bvc_admin_testimonials_data', updatedTestimonials);
+      saveToLocalStorage('bvc_admin_testimonials_last_fetch', new Date().getTime());
     } catch (error) {
-      console.error('Error deleting testimonial:', error);
-      toast.error('Failed to delete testimonial');
+      console.error('Error updating testimonial rating:', error);
+      toast.error('Failed to update rating');
+    }
+  };
+
+  // Delete a testimonial
+  const deleteTestimonial = async (id: string) => {
+    if (window.confirm('Are you sure you want to delete this testimonial? This action cannot be undone.')) {
+      try {
+        await deleteDoc(doc(db, 'testimonials', id));
+        toast.success('Testimonial deleted successfully');
+        
+        // Update local state
+        const updatedTestimonials = testimonials.filter(t => t.id !== id);
+        setTestimonials(updatedTestimonials);
+        setFilteredTestimonials(prevFiltered => prevFiltered.filter(t => t.id !== id));
+        
+        // Update analytics
+        setAnalytics(calculateAnalytics(updatedTestimonials));
+        
+        // Update cache
+        saveToLocalStorage('bvc_admin_testimonials_data', updatedTestimonials);
+        saveToLocalStorage('bvc_admin_testimonials_last_fetch', new Date().getTime());
+      } catch (error) {
+        console.error('Error deleting testimonial:', error);
+        toast.error('Failed to delete testimonial');
+      }
     }
   };
 
@@ -430,6 +491,7 @@ function TestimonialsAdminPage() {
                 <tr>
                   <th scope="col" className="px-6 py-3">Name / Role</th>
                   <th scope="col" className="px-6 py-3">Message</th>
+                  <th scope="col" className="px-6 py-3">Rating</th>
                   <th scope="col" className="px-6 py-3">Date</th>
                   <th scope="col" className="px-6 py-3">Status</th>
                   <th scope="col" className="px-6 py-3">Actions</th>
@@ -451,6 +513,28 @@ function TestimonialsAdminPage() {
                           ? `${testimonial.message.substring(0, 100)}...` 
                           : testimonial.message
                         }
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <button
+                            key={star}
+                            onClick={() => updateRating(testimonial.id, star)}
+                            className="focus:outline-none"
+                            title={`Set rating to ${star} stars`}
+                            aria-label={`Set rating to ${star} stars`}
+                          >
+                            <span className={`text-lg ${(testimonial.rating || 0) >= star ? 'text-yellow-400 dark:text-yellow-500' : 'text-gray-300 dark:text-gray-600'} hover:text-yellow-500`}>
+                              ★
+                            </span>
+                          </button>
+                        ))}
+                        {testimonial.rating ? (
+                          <span className="ml-2 text-gray-600 dark:text-gray-400 text-sm">({testimonial.rating})</span>
+                        ) : (
+                          <span className="ml-2 text-gray-400 dark:text-gray-500 text-sm">Not rated</span>
+                        )}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">

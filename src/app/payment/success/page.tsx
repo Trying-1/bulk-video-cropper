@@ -20,10 +20,10 @@ export default function SuccessPage() {
               Your payment has been processed successfully. You can now start using the video cropping service.
             </p>
             <Button 
-              onClick={() => router.push('/dashboard')}
+              onClick={() => router.push('/profile')}
               className="w-full"
             >
-              Go to Dashboard
+              Go to Profile
             </Button>
           </div>
         </Card>

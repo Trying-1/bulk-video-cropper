@@ -7,7 +7,7 @@ This document outlines the authentication system used in Bulk Video Kropper. The
 ## Core Architecture
 
 - **Firebase Authentication**: Primary authentication provider
-- **Multiple Auth Methods**: Email/password and Google Sign-In
+- **Authentication Method**: Email/password with verification
 - **Context-based Design**: Uses React Context API for state management
 - **Cookie Session Management**: Enhanced persistence beyond Firebase's built-in functionality
 
@@ -25,7 +25,7 @@ This document outlines the authentication system used in Bulk Video Kropper. The
 
 - Core authentication functionality including:
   - Email/password signup and signin
-  - Google authentication
+  - Email verification
   - Password reset
   - Sign out
 - Error handling for authentication operations
@@ -36,7 +36,7 @@ This document outlines the authentication system used in Bulk Video Kropper. The
 - Main auth page (`/auth/page.tsx`) that serves as an entry point
 - Uses `AuthLayout` component to render either signin, signup, or password reset form based on URL parameters
 - Supports special flags like `signup=true`, `forgot=true`, and `source=free`
-- Handles redirect results from third-party auth providers (Google)
+- Handles email verification flow
 - Located at: `src/app/auth/page.tsx` and `src/components/auth/AuthLayout.tsx`
 
 ### 4. Session Management
@@ -59,25 +59,30 @@ This document outlines the authentication system used in Bulk Video Kropper. The
 1. User navigates to `/auth?signup=true`
 2. User enters email, password, confirms password, and accepts terms
 3. Firebase creates new account via `createUserWithEmailAndPassword`
-4. Basic profile is stored with display name
-5. User is redirected to profile page
-6. Session cookie is created for persistence
+4. Verification email is automatically sent to the user's email address
+5. Basic profile is stored with display name
+6. User is shown a verification email notification
+7. Session cookie is created for persistence
 
 ### Sign In Flow
 
 1. User navigates to `/auth`
 2. User enters email and password
 3. Firebase validates credentials via `signInWithEmailAndPassword`
-4. Session cookie is created for persistence
-5. User is redirected to profile or requested page (via `returnUrl` parameter)
+4. System checks if user's email is verified
+   - If verified, user proceeds to normal flow
+   - If not verified, user is shown verification notification with option to resend verification email
+5. Session cookie is created for persistence
+6. Verified users are redirected to profile or requested page (via `returnUrl` parameter)
 
-### Google Authentication Flow
+### Email Verification Flow
 
-1. User clicks "Continue with Google" button
-2. Firebase popup opens for Google authentication via `signInWithPopup`
-3. On success, user profile is created/retrieved
-4. Session cookie is created for persistence
-5. User is redirected to profile page
+1. System sends verification email when user creates account
+2. User receives email with verification link
+3. When clicked, link directs to `/verify-email` page with verification code
+4. System verifies email using Firebase's `applyActionCode`
+5. User's account is marked as verified in both Firebase and database
+6. User can now fully access all features
 
 ### Password Reset Flow
 
@@ -86,6 +91,13 @@ This document outlines the authentication system used in Bulk Video Kropper. The
 3. Firebase sends password reset email via `sendPasswordResetEmail`
 4. Success message is displayed to user
 5. User receives email with reset link
+
+### Resend Verification Email Flow
+
+1. Unverified user signs in or clicks "Resend verification email" button
+2. System calls `sendVerificationEmail` function
+3. New verification email is sent to user's email address
+4. Success message confirms email has been sent
 
 ### Session Management Flow
 

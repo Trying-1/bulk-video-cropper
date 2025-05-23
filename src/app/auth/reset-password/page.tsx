@@ -85,7 +85,7 @@ const ResetPasswordPage: React.FC = () => {
           </div>
 
           <div className="text-center">
-            <Link href="/auth/signin" className="font-medium text-teal-600 hover:text-teal-500 dark:text-teal-400 dark:hover:text-teal-300">
+            <Link href="/auth" className="font-medium text-teal-600 hover:text-teal-500 dark:text-teal-400 dark:hover:text-teal-300">
               Back to sign in
             </Link>
           </div>

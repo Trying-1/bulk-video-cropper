@@ -16,6 +16,7 @@ export default function SubmitTestimonialPage() {
     role: '',
     message: '',
     email: '',
+    rating: 5, // Default to 5 stars
     consent: false
   });
   const [submitting, setSubmitting] = useState(false);
@@ -38,6 +39,31 @@ export default function SubmitTestimonialPage() {
     setSubmitting(true);
     setError(null);
     
+    // Validate form data
+    if (!testimonialForm.name.trim()) {
+      setError('Please enter your name.');
+      setSubmitting(false);
+      return;
+    }
+    
+    if (!testimonialForm.email.trim() || !testimonialForm.email.includes('@')) {
+      setError('Please enter a valid email address.');
+      setSubmitting(false);
+      return;
+    }
+    
+    if (testimonialForm.message.trim().length < 10) {
+      setError('Please enter a testimonial message (minimum 10 characters).');
+      setSubmitting(false);
+      return;
+    }
+    
+    if (!testimonialForm.consent) {
+      setError('Please provide consent to publish your testimonial.');
+      setSubmitting(false);
+      return;
+    }
+    
     try {
       // Submit the testimonial to the database
       await createTestimonial(
@@ -45,11 +71,23 @@ export default function SubmitTestimonialPage() {
         testimonialForm.role || undefined, // Send undefined if empty string
         testimonialForm.message,
         testimonialForm.email,
-        user?.uid // Include user ID if logged in
+        user?.uid, // Include user ID if logged in
+        testimonialForm.rating // Include user rating
       );
       
+      // Show success message and clear form
       setSubmitSuccess(true);
       console.log('Testimonial submitted successfully');
+      
+      // Reset form data (helps if the user wants to submit another testimonial)
+      setTestimonialForm({
+        name: '',
+        role: '',
+        message: '',
+        email: '',
+        rating: 5, // Reset to default 5 stars
+        consent: false
+      });
     } catch (err) {
       console.error('Error submitting testimonial:', err);
       setError('There was an error submitting your testimonial. Please try again.');
@@ -100,6 +138,7 @@ export default function SubmitTestimonialPage() {
                     role: '',
                     message: '',
                     email: userProfile?.email || '',
+                    rating: 5, // Default to 5 stars
                     consent: false
                   });
                 }}
@@ -216,6 +255,30 @@ export default function SubmitTestimonialPage() {
                     </p>
                   </>
                 )}
+              </div>
+              
+              <div className="mb-4">
+                <label htmlFor="rating" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Rate Your Experience <span className="text-red-500">*</span>
+                </label>
+                <div className="flex items-center">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      onClick={() => setTestimonialForm({...testimonialForm, rating: star})}
+                      className="text-2xl focus:outline-none mr-1"
+                      aria-label={`Rate ${star} stars out of 5`}
+                    >
+                      <span className={testimonialForm.rating >= star ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'}>
+                        ★
+                      </span>
+                    </button>
+                  ))}
+                  <span className="ml-2 text-sm text-gray-600 dark:text-gray-300">
+                    ({testimonialForm.rating} of 5 stars)
+                  </span>
+                </div>
               </div>
               
               <div>

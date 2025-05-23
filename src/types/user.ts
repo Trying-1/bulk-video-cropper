@@ -6,4 +6,5 @@ export interface User {
   subscription: 'free' | 'premium' | 'pro';
   usedQuota: number;
   nextRenewal: string;
+  emailVerified: boolean;
 }

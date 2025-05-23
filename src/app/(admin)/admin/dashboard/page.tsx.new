@@ -8,11 +8,18 @@ import { initializeAdminCollections } from '@/utils/adminFirestore';
 
 interface DashboardStats {
   totalUsers: number;
+  activeSubscriptions: {
+    free: number;
+    premium: number;
+    pro: number;
+  };
   recentSignups: number;
   totalVideosProcessed: number;
   processingLastWeek: number;
   averageProcessingTime: number;
   storageUsed: number;
+  activePlans: number;
+  activePromotions: number;
 }
 
 interface RecentUser {
@@ -27,11 +34,18 @@ export default function AdminDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<DashboardStats>({
     totalUsers: 0,
+    activeSubscriptions: {
+      free: 0,
+      premium: 0,
+      pro: 0,
+    },
     recentSignups: 0,
     totalVideosProcessed: 0,
     processingLastWeek: 0,
     averageProcessingTime: 0,
     storageUsed: 0,
+    activePlans: 0,
+    activePromotions: 0,
   });
   const [recentUsers, setRecentUsers] = useState<RecentUser[]>([]);
 
@@ -137,7 +151,13 @@ export default function AdminDashboardPage() {
         const userSnapshot = await getDocs(usersQuery);
         const userCount = userSnapshot.size;
         
+        // Count subscription types
+        let freeCount = 0;
+        let proCount = 0;
+        let premiumCount = 0;
         let recentSignupCount = 0;
+        
+        // Process user data
         const oneWeekAgo = new Date();
         oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
         
@@ -145,6 +165,12 @@ export default function AdminDashboardPage() {
         
         userSnapshot.forEach((doc) => {
           const user = doc.data();
+          const userSubscription = user.subscription || 'free';
+          
+          // Count by subscription type
+          if (userSubscription === 'free') freeCount++;
+          if (userSubscription === 'pro') proCount++;
+          if (userSubscription === 'premium') premiumCount++;
           
           // Create user object for display
           let createdDate: Date;
@@ -169,8 +195,27 @@ export default function AdminDashboardPage() {
             id: doc.id,
             email: user.email || 'user@example.com',
             createdAt: createdDate,
-            subscription: 'free', // Default to free since we're removing subscriptions
+            subscription: userSubscription,
           });
+        });
+        
+        // Get subscription plans and promo codes count
+        const plansQuery = collection(db, 'subscriptionPlans');
+        const plansSnapshot = await getDocs(plansQuery);
+        let activePlansCount = 0;
+        
+        plansSnapshot.forEach((doc) => {
+          const planData = doc.data();
+          if (planData.isActive) activePlansCount++;
+        });
+        
+        const promoQuery = collection(db, 'promotionCodes');
+        const promoSnapshot = await getDocs(promoQuery);
+        let activePromosCount = 0;
+        
+        promoSnapshot.forEach((doc) => {
+          const promoData = doc.data();
+          if (promoData.isActive) activePromosCount++;
         });
         
         // Sort users by creation date for display
@@ -181,11 +226,18 @@ export default function AdminDashboardPage() {
         // Set all the stats
         setStats({
           totalUsers: userCount,
+          activeSubscriptions: {
+            free: freeCount,
+            premium: premiumCount,
+            pro: proCount,
+          },
           recentSignups: recentSignupCount,
           totalVideosProcessed: await fetchTotalVideosProcessed(),
           processingLastWeek: await fetchProcessingLastWeek(),
           averageProcessingTime: await fetchAverageProcessingTime(),
           storageUsed: await fetchStorageUsed(),
+          activePlans: activePlansCount,
+          activePromotions: activePromosCount,
         });
         
         setRecentUsers(recentUsersData);
@@ -195,16 +247,23 @@ export default function AdminDashboardPage() {
         // Fallback data if API calls fail
         setStats({
           totalUsers: 3,
+          activeSubscriptions: {
+            free: 2,
+            premium: 0,
+            pro: 1,
+          },
           recentSignups: 1,
           totalVideosProcessed: 128,
           processingLastWeek: 32,
           averageProcessingTime: 12,
           storageUsed: 145,
+          activePlans: 2,
+          activePromotions: 1,
         });
         
         setRecentUsers([
-          { id: '1', email: 'user1@bulkvidcropper.com', createdAt: new Date(Date.now() - 86400000), subscription: 'free' },
-          { id: '2', email: 'user2@bulkvidcropper.com', createdAt: new Date(Date.now() - 86400000 * 2), subscription: 'free' },
+          { id: '1', email: 'user1@bulkvidcropper.com', createdAt: new Date(Date.now() - 86400000), subscription: 'premium' },
+          { id: '2', email: 'user2@bulkvidcropper.com', createdAt: new Date(Date.now() - 86400000 * 2), subscription: 'pro' },
           { id: '3', email: 'user3@bulkvidcropper.com', createdAt: new Date(Date.now() - 86400000 * 3), subscription: 'free' },
         ]);
       } finally {
@@ -250,7 +309,7 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* Key Metrics */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {/* Users */}
         <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-5">
           <div className="flex items-center">
@@ -287,7 +346,40 @@ export default function AdminDashboardPage() {
           </div>
         </div>
 
-
+        {/* Subscriptions */}
+        <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-5">
+          <div className="flex items-center">
+            <div className="flex-shrink-0 rounded-md bg-purple-100 dark:bg-purple-900 p-3">
+              <svg className="h-6 w-6 text-purple-600 dark:text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+              </svg>
+            </div>
+            <div className="ml-5 w-0 flex-1">
+              <dl>
+                <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">Active Subscriptions</dt>
+                <dd>
+                  <div className="text-lg font-medium text-gray-900 dark:text-white">{formatNumber(stats.activeSubscriptions.premium + stats.activeSubscriptions.pro)}</div>
+                </dd>
+              </dl>
+            </div>
+          </div>
+          <div className="mt-4">
+            <div className="grid grid-cols-3 gap-2">
+              <div className="bg-gray-50 dark:bg-gray-700 p-2 rounded text-center">
+                <div className="text-xs text-gray-500 dark:text-gray-400">Free</div>
+                <div className="font-medium text-gray-900 dark:text-white">{stats.activeSubscriptions.free}</div>
+              </div>
+              <div className="bg-teal-50 dark:bg-teal-900/30 p-2 rounded text-center">
+                <div className="text-xs text-teal-600 dark:text-teal-400">Premium</div>
+                <div className="font-medium text-teal-800 dark:text-teal-300">{stats.activeSubscriptions.premium}</div>
+              </div>
+              <div className="bg-purple-50 dark:bg-purple-900/30 p-2 rounded text-center">
+                <div className="text-xs text-purple-600 dark:text-purple-400">Pro</div>
+                <div className="font-medium text-purple-800 dark:text-purple-300">{stats.activeSubscriptions.pro}</div>
+              </div>
+            </div>
+          </div>
+        </div>
 
         {/* Video Processing */}
         <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-5">
@@ -364,7 +456,7 @@ export default function AdminDashboardPage() {
               <tr>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">User</th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Joined</th>
-
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Plan</th>
                 <th scope="col" className="relative px-6 py-3"><span className="sr-only">Edit</span></th>
               </tr>
             </thead>
@@ -389,7 +481,14 @@ export default function AdminDashboardPage() {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900 dark:text-white">{formatDate(user.createdAt)}</div>
                   </td>
-
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                      ${user.subscription === 'pro' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300' : 
+                        user.subscription === 'premium' ? 'bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-300' : 
+                        'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'}`}>
+                      {user.subscription.charAt(0).toUpperCase() + user.subscription.slice(1)}
+                    </span>
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <a href={`/admin/users/${user.id}`} className="text-teal-600 hover:text-teal-900 dark:text-teal-400 dark:hover:text-teal-300">
                       View

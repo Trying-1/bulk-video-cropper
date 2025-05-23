@@ -81,12 +81,7 @@ function Navigation() {
                   >
                     How It Works
                   </a>
-                  <a
-                    href="#pricing"
-                    className="border-transparent text-gray-500 dark:text-gray-400 hover:border-gray-300 hover:text-gray-700 dark:hover:text-white inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
-                  >
-                    Pricing
-                  </a>
+
                   <a
                     href="#testimonials"
                     className="border-transparent text-gray-500 dark:text-gray-400 hover:border-gray-300 hover:text-gray-700 dark:hover:text-white inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
@@ -117,16 +112,7 @@ function Navigation() {
               >
                 Editor
               </Link>
-              <Link
-                href="/plans"
-                className={`inline-flex items-center px-1 pt-1 border-b-2 ${
-                  isActive('/plans')
-                    ? 'border-teal-500 text-gray-900 dark:text-white'
-                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:border-gray-300 hover:text-gray-700 dark:hover:text-white'
-                }`}
-              >
-                Plans
-              </Link>
+
               {userFlowEnabled && (
                 <Link
                   href="/user-flow"
@@ -146,30 +132,8 @@ function Navigation() {
             {user ? (
               <div className="ml-3 relative">
                 <div className="flex items-center space-x-4">
-                  {/* Upgrade button with Coming Soon modal */}
-                  {!paymentsEnabled && subscription?.plan?.name === 'free' && (
-                    <button
-                      onClick={() => showComingSoon({
-                        featureName: 'Premium Features',
-                        description: 'Premium features are coming soon! We\'re hard at work making this application even better.'
-                      })}
-                      className="bg-gradient-to-r from-purple-600 to-blue-500 text-white text-xs px-3 py-1 rounded-full hover:from-purple-700 hover:to-blue-600 transition-all duration-300"
-                    >
-                      Upgrade
-                    </button>
-                  )}
-                  
-                  {subscription && (
-                    <span className={`px-2 py-1 rounded-full text-xs ${
-                      subscription.status === 'active'
-                        ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
-                        : subscription.status === 'cancelled'
-                          ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
-                          : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300'
-                    }`}>
-                      {subscription.status}
-                    </span>
-                  )}
+
+
                   <Link
                     href="/profile"
                     className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white flex items-center gap-1"
@@ -223,13 +187,7 @@ function Navigation() {
                 >
                   How It Works
                 </a>
-                <a
-                  href="#pricing"
-                  className="block py-2 px-3 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  Pricing
-                </a>
+
                 <a
                   href="#testimonials"
                   className="block py-2 px-3 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
@@ -254,13 +212,6 @@ function Navigation() {
               onClick={() => setIsMobileMenuOpen(false)}
             >
               Editor
-            </Link>
-            <Link
-              href="/plans"
-              className={`block py-2 px-3 rounded-md ${isActive('/plans') ? 'bg-teal-50 dark:bg-teal-900 text-teal-700 dark:text-teal-300' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              Plans
             </Link>
             {userFlowEnabled && (
               <Link

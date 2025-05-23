@@ -9,8 +9,8 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || '/api';
 export const API_ENDPOINTS = {
   // Authentication endpoints
   AUTH: {
-    SIGN_UP: `${API_BASE_URL}/auth/signup`,
-    SIGN_IN: `${API_BASE_URL}/auth/signin`,
+    SIGN_UP: `${API_BASE_URL}/auth`,
+    SIGN_IN: `${API_BASE_URL}/auth`,
     SIGN_OUT: `${API_BASE_URL}/auth/signout`,
     GOOGLE_AUTH: `${API_BASE_URL}/auth/google`,
     PASSWORD_RESET: `${API_BASE_URL}/auth/password-reset`,

@@ -2,6 +2,17 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { apiRateLimitMiddleware } from './middleware/apiRateLimit';
 
+// List of payment and subscription related paths to block
+const BLOCKED_PATHS = [
+  '/payment',
+  '/payment-methods',
+  '/payment-success',
+  '/subscription',
+  '/plans',
+  '/pricing',
+  '/upsell'
+];
+
 /**
  * Security middleware that adds appropriate HTTP security headers to all responses
  * This middleware runs on all routes and helps mitigate common web vulnerabilities
@@ -15,8 +26,22 @@ import { apiRateLimitMiddleware } from './middleware/apiRateLimit';
  * - Permissions-Policy: Restricts access to browser features
  */
 export function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  // Check if the current path starts with any blocked path
+  const isBlocked = BLOCKED_PATHS.some(path => 
+    pathname === path || pathname.startsWith(`${path}/`)
+  );
+
+  if (isBlocked) {
+    // Redirect to 404 page
+    const url = request.nextUrl.clone();
+    url.pathname = '/404';
+    return NextResponse.rewrite(url);
+  }
+
   // Apply API rate limiting for API routes
-  if (request.nextUrl.pathname.startsWith('/api/')) {
+  if (pathname.startsWith('/api/')) {
     return apiRateLimitMiddleware(request);
   }
   

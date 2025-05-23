@@ -17,21 +17,13 @@ export const APP_IDENTITY = {
 export const APP_URLS = {
   domain: 'bulkvideocropper.com',
   baseUrl: 'https://bulkvideocropper.com',
-  apiBase: 'https://bulkvideocropper.com/api',
-  appBase: 'https://app.bulkvideocropper.com',
   landingPage: 'https://bulkvideocropper.com',
   contactPage: 'https://bulkvideocropper.com/contact',
 };
 
 // Email addresses
 export const APP_EMAILS = {
-  support: 'support@bulkvideocropper.com',
-  info: 'info@bulkvideocropper.com',
-  press: 'press@bulkvideocropper.com',
-  business: 'business@bulkvideocropper.com',
-  privacy: 'privacy@bulkvideocropper.com',
-  admin: 'admin@bulkvideocropper.com',
-  developers: 'developers@bulkvideocropper.com',
+  support: 'support@bulkvideocropper.com'
 };
 
 // Product information
@@ -87,22 +79,11 @@ export const CONTACT_INFO = {
     support: 'support@bulkvidcropper.com',
     info: 'info@bulkvidcropper.com',
     press: 'press@bulkvidcropper.com',
-  },
-  phone: '+1 (555) 123-4567',
-  address: {
-    line1: '123 Video Street',
-    line2: 'Suite 456',
-    city: 'San Francisco',
-    state: 'CA',
-    zip: '94107',
-    country: 'USA',
-  },
+  }
 };
 
-// Developer and API information
+// GitHub information
 export const DEVELOPER_INFO = {
-  website: 'https://developers.bulkvidcropper.com',
-  documentation: 'https://docs.bulkvidcropper.com',
   github: 'https://github.com/bulkvidcropper',
 };
 

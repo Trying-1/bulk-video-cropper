@@ -14,8 +14,8 @@ interface ComingSoonModalProps {
 export default function ComingSoonModal({
   isOpen,
   onClose,
-  featureName = 'Premium',
-  description = 'This feature is not available in the MVP release. We\'re working hard to bring you premium features in a future update.'
+  featureName = 'Coming Soon',
+  description = 'This feature is not available in the current release. We\'re working hard to bring you new features in future updates.'
 }: ComingSoonModalProps) {
   return (
     <AnimatePresence>
@@ -64,7 +64,7 @@ export default function ComingSoonModal({
               </p>
               
               <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                Sign up for our newsletter to be notified when premium features launch.
+                Check back soon for exciting new features and updates.
               </p>
               
               <div className="flex space-x-3 justify-center">
@@ -72,7 +72,7 @@ export default function ComingSoonModal({
                   onClick={onClose}
                   className="bg-blue-500 hover:bg-blue-600 text-white"
                 >
-                  Continue with Free Plan
+                  Continue
                 </Button>
               </div>
             </div>
@@ -89,8 +89,8 @@ export default function ComingSoonModal({
 export function useComingSoon() {
   const [isOpen, setIsOpen] = useState(false);
   const [modalProps, setModalProps] = useState({
-    featureName: 'Premium',
-    description: 'This feature is not available in the MVP release. We\'re working hard to bring you premium features in a future update.'
+    featureName: 'Coming Soon',
+    description: 'This feature is not available in the current release. We\'re working hard to bring you new features in future updates.'
   });
 
   const showComingSoon = (props?: {

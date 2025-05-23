@@ -1,0 +1,115 @@
+'use client';
+
+import Link from 'next/link';
+
+export default function PlansPage() {
+      return [promoCode];
+    });
+  };
+
+  // Apply promotion code
+  const applyPromoCode = (code: string) => {
+    const promo = PROMOTION_CODES.find(p => p.code === code && p.isActive);
+    if (promo) {
+      setActivePromoCodes([code]);
+    } else {
+      toast.error('Invalid or expired promotion code');
+    }
+  };
+
+  // Clear all active promotions
+  const clearPromotions = () => {
+    setActivePromoCodes([]);
+  };
+
+  // Calculate price with any active promotion codes
+  const getDiscountedPrice = (plan: SubscriptionPlan) => {
+    // Skip free plans
+    if (plan.price === 0) return plan.price.toFixed(2);
+    
+    // Check for any applicable promo codes that are active
+    const applicablePromo = PROMOTION_CODES.find(promo => 
+      activePromoCodes.includes(promo.code) && 
+      promo.applicablePlans.includes(plan.id)
+    );
+    
+    if (applicablePromo) {
+      return calculateDiscountedPrice(plan.price, applicablePromo.discountPercentage).toFixed(2);
+    }
+    
+    return plan.price.toFixed(2);
+  };
+
+  // Get plans from centralized pricing configuration
+  const plans = getAllPlans();
+
+  // Function to handle selecting a plan
+  const handleSelectPlan = (planId: string) => {
+    setSelectedPlan(planId);
+    
+    // For the free plan, go directly to the payment page (which will just show confirmation)
+    if (planId === 'free') {
+      router.push(`/payment?plan=${planId}`);
+      return;
+    }
+    
+    // For premium plans, if payments are disabled, show Coming Soon modal
+    if (!paymentsEnabled) {
+      const plan = plans.find(p => p.id === planId);
+      showComingSoon({
+        featureName: `${plan?.name} Plan`,
+        description: `The ${plan?.name} plan is coming soon! We're currently finalizing our payment system and premium features. You can continue using our free plan in the meantime.`
+      });
+      return;
+    }
+    
+    // If payments are enabled, proceed to payment page
+    router.push(`/payment?plan=${planId}`);
+  };
+
+  // Handle signing up from plans page
+  const handleSignUp = () => {
+    if (!user) {
+      // Store current path to redirect back after auth
+      sessionStorage.setItem('authRedirect', '/plans');
+      router.push('/auth');
+    }
+  };
+
+  // Function to display prices with formatting
+  const formatCurrency = (amount: number, decimals = 2) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: amount % 1 === 0 ? 0 : decimals,
+      maximumFractionDigits: decimals
+    }).format(amount);
+  // CSS animations for plan hover
+  const hoverAnimation = "transition-transform duration-300 hover:-translate-y-2";
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-teal-50 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center">
+      <div className="text-center max-w-xl mx-auto px-4 py-12">
+        <div className="mb-8 animate-bounce inline-block">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-teal-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        <h1 className="text-4xl md:text-5xl font-bold mb-4 text-gray-900 dark:text-white">
+          Coming Soon
+        </h1>
+        <p className="text-xl text-gray-600 dark:text-gray-300 mb-8">
+          We're working on our subscription plans and will launch them soon.
+        </p>
+        <p className="text-md text-gray-500 dark:text-gray-400 mb-8">
+          In the meantime, you can enjoy all the free features of our video cropping tool.
+        </p>
+        <Link 
+          href="/editor" 
+          className="bg-teal-500 hover:bg-teal-600 text-white font-bold py-3 px-8 rounded-lg text-lg shadow-lg hover:shadow-xl transition-all duration-300"
+        >
+          Try Free Version
+        </Link>
+      </div>
+    </div>
+  );
+}

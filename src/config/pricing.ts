@@ -1,7 +1,7 @@
 /**
- * Centralized Pricing Configuration
- * All pricing, subscription plans, and discount information is defined here
- * Import from this file to ensure consistency across the application
+ * Centralized Pricing Configuration [DISABLED FOR ADSENSE COMPLIANCE]
+ * All pricing features are disabled as they are not yet fully implemented.
+ * This configuration is kept for future reference but not actively used.
  */
 
 import { APP_IDENTITY } from './branding';
@@ -81,8 +81,8 @@ export const SUBSCRIPTION_PLANS: Record<string, SubscriptionPlan> = {
     ],
     cta: 'Try It Out',
     popular: false,
-    maxUploadsAtOnce: 5,
-    totalCredits: 5,
+    maxUploadsAtOnce: 15,
+    totalCredits: 150,
     creditsExpiration: 'never',
     costPerVideo: 1,
     supportLevel: 'none',

@@ -4,22 +4,18 @@ import Link from "next/link";
 import Image from "next/image";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { getUserSessionCookie, updateAppStateCookie, getAppStateCookie } from '@/utils/cookies';
+import { getUserSessionCookie, updateAppStateCookie } from '@/utils/cookies';
 import { useComingSoon } from "@/components/ComingSoonModal";
-import { isFeatureEnabled } from "@/config/features";
 import { APP_IDENTITY, SOCIAL_MEDIA, CONTACT_INFO, LEGAL_DOCS, PRODUCT } from "@/config/branding";
-import { SUBSCRIPTION_PLANS, getAllPlans, calculateAnnualPrice, PROMOTION_CODES } from '@/config/pricing';
+import { getApprovedTestimonials, createTestimonial, updateTestimonialStatus, Testimonial } from '@/services/testimonialService';
 
 export default function Home() {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
+  const [loadingTestimonials, setLoadingTestimonials] = useState(true);
   const { user, loading } = useAuth();
   const { showComingSoon, ComingSoonModal } = useComingSoon();
-  
-  // No state needed for testimonial button
-  
-  // Check if payments are enabled
-  const paymentsEnabled = isFeatureEnabled('ENABLE_PAYMENTS');
   
   useEffect(() => {
     // Check cookies first for faster initial render
@@ -33,6 +29,65 @@ export default function Home() {
       lastVisitedPage: '/'
     });
     
+    // Fetch testimonials from the database
+    const fetchTestimonials = async () => {
+      try {
+        setLoadingTestimonials(true);
+        console.log('Fetching testimonials for landing page...');
+        
+        // Get only featured testimonials from the database
+        let featuredTestimonials = await getApprovedTestimonials(true, 3);
+        console.log('Featured testimonials fetched from DB:', featuredTestimonials);
+        
+        // Use only what's in the database, no fallbacks
+        let fetchedTestimonials = featuredTestimonials;
+        
+        // If no testimonials found, show nothing
+        if (!fetchedTestimonials || fetchedTestimonials.length === 0) {
+          console.log('No testimonials found in database, testimonial section will be empty');
+          fetchedTestimonials = [];
+        }
+        
+        console.log('Final testimonials to display:', fetchedTestimonials);
+        console.log('Testimonials count:', fetchedTestimonials.length);
+        
+        setTestimonials(fetchedTestimonials);
+      } catch (error) {
+        console.error('Error fetching testimonials:', error);
+        
+        // Fallback to mock data in case of error
+        console.log('Error occurred, using mock testimonial data');
+        const mockTestimonials = [
+          {
+            id: 'mock-1',
+            name: 'Sarah K.',
+            role: 'Content Creator',
+            message: 'This tool has saved me hours of work. Now I can crop multiple videos for Instagram, TikTok, and YouTube Shorts all at once!',
+            email: 'demo@example.com',
+            approved: true,
+            featured: true,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          },
+          {
+            id: 'mock-2',
+            name: 'Michael T.',
+            role: 'Social Media Manager',
+            message: 'The batch processing feature is a game-changer for our agency. We can now deliver content for multiple platforms much faster.',
+            email: 'demo@example.com',
+            approved: true,
+            featured: false,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          }
+        ];
+        setTestimonials(mockTestimonials);
+      } finally {
+        setLoadingTestimonials(false);
+      }
+    };
+    
+    fetchTestimonials();
     setIsLoaded(true);
   }, []);
   
@@ -74,40 +129,26 @@ export default function Home() {
                 {APP_IDENTITY.name}
               </h1>
               <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-300 mb-10 max-w-3xl mx-auto">
-                Edit multiple videos at once with our powerful video editing tool. Perfect for social media content creators.
+                Effortlessly crop multiple videos simultaneously for all social media platforms.
               </p>
-              <div className="flex flex-col md:flex-row justify-center gap-6 relative z-10">
-                <Link
-                  href={isAuthenticated ? "/editor" : "/auth?source=free"}
-                  className="group relative overflow-hidden bg-gradient-to-r from-teal-500 to-blue-600 text-white px-10 py-5 rounded-xl font-bold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
+              
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                <Link 
+                  href="/editor" 
+                  className="px-8 py-4 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white rounded-lg font-medium text-lg shadow-lg inline-flex items-center justify-center transition-all duration-300 w-full sm:w-auto"
                 >
-                  <span className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-teal-400 to-blue-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
-                  <span className="relative flex items-center justify-center">
+                  Try It Now
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </Link>
+                
+                <Link 
+                  href="#how-it-works" 
+                  className="px-8 py-4 bg-white dark:bg-gray-800 text-gray-700 dark:text-white border border-gray-200 dark:border-gray-700 rounded-lg font-medium text-lg hover:bg-gray-50 dark:hover:bg-gray-700 shadow-md inline-flex items-center justify-center transition-colors w-full sm:w-auto"
+                >
+                  <span className="inline-flex items-center">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                    </svg>
-                    Get Started for Free
-                  </span>
-                </Link>
-                <Link
-                  href="/plans"
-                  className="group relative overflow-hidden bg-white dark:bg-gray-800 text-teal-600 dark:text-teal-400 border-2 border-teal-500 dark:border-teal-400 px-10 py-5 rounded-xl font-bold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
-                >
-                  <span className="absolute top-0 left-0 w-full h-full bg-teal-50 dark:bg-gray-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
-                  <span className="relative flex items-center justify-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-teal-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 11l5-5m0 0l5 5m-5-5v12" />
-                    </svg>
-                    See Plans & Pricing
-                  </span>
-                </Link>
-                <Link
-                  href="#how-it-works"
-                  className="group relative overflow-hidden bg-white dark:bg-gray-800 text-gray-900 dark:text-white px-10 py-5 rounded-xl font-bold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
-                >
-                  <span className="absolute top-0 left-0 w-full h-full bg-gray-100 dark:bg-gray-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
-                  <span className="relative flex items-center justify-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-gray-500 dark:text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     How It Works
@@ -153,9 +194,9 @@ export default function Home() {
             <div className="relative">
               <div className="bg-white dark:bg-gray-700 rounded-xl p-8 shadow-lg relative h-full border border-gray-100 dark:border-gray-600">
                 <div className="w-12 h-12 bg-gradient-to-br from-orange-400 to-orange-600 text-white rounded-full flex items-center justify-center font-bold text-xl mb-6 shadow-md">2</div>
-                <h3 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">AI Processing</h3>
+                <h3 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">Manual Cropping</h3>
                 <p className="text-gray-600 dark:text-gray-300">
-                  Our AI analyzes and processes your videos to optimize them for social media.
+                  Use our intuitive tools to manually crop and adjust your videos for different platforms.
                 </p>
               </div>
               <div className="hidden md:block absolute top-1/2 -right-12 transform -translate-y-1/2 z-10">
@@ -216,391 +257,113 @@ export default function Home() {
                 </p>
               </div>
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow">
-                <div className="text-teal-500 text-4xl mb-4">📊</div>
+                <div className="text-teal-500 text-4xl mb-4">🔄</div>
                 <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                  Subscription Plans
+                  Custom Format Options
                 </h3>
                 <p className="text-gray-600 dark:text-gray-300">
-                  Choose from multiple plans to suit your video editing needs.
+                  Export videos in various formats optimized for different platforms.
                 </p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Pricing Section */}
-        <section id="pricing" className="py-20 bg-gradient-to-br from-teal-50 via-white to-orange-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-          <div className="container mx-auto px-4">
-            <h2 className="text-4xl font-bold text-center text-gray-900 dark:text-white mb-12">
-              Pricing Plans
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-              {/* Free Plan */}
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 hover:shadow-xl transition-shadow border-t-4 border-gray-200 dark:border-gray-700 relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 -z-10 opacity-50"></div>
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                  {SUBSCRIPTION_PLANS.FREE.name}
-                </h3>
-                <div className="text-4xl font-bold text-gray-800 dark:text-white mb-6">
-                  ${SUBSCRIPTION_PLANS.FREE.price}<span className="text-sm text-gray-500 font-normal">/{SUBSCRIPTION_PLANS.FREE.billing.includes('Free') ? 'forever' : 'month'}</span>
-                </div>
-                <ul className="space-y-3 mb-8">
-                  {SUBSCRIPTION_PLANS.FREE.features.map((feature, index) => (
-                    <li key={index} className="flex items-center text-gray-600 dark:text-gray-300">
-                      <svg className="w-5 h-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                      </svg>
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
-                <button
-                  onClick={() => {
-                    const user = localStorage.getItem('user');
-                    if (user) {
-                      // User is logged in, go to plans
-                      window.location.href = `/plans?plan=${SUBSCRIPTION_PLANS.FREE.id}`;
-                    } else {
-                      // User is not logged in, go to auth with returnUrl
-                      window.location.href = `/auth?source=${SUBSCRIPTION_PLANS.FREE.id}&returnUrl=/plans?plan=${SUBSCRIPTION_PLANS.FREE.id}`;
-                    }
-                  }}
-                  className="block w-full py-3 px-4 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-center text-gray-700 dark:text-white font-medium rounded-lg transition-colors"
-                >
-                  {SUBSCRIPTION_PLANS.FREE.cta}
-                </button>
-              </div>
-
-              {/* Premium Plan */}
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-8 hover:shadow-2xl transition-shadow border-t-4 border-teal-500 dark:border-teal-400 relative scale-105 z-10 overflow-hidden">
-                {SUBSCRIPTION_PLANS.PREMIUM.popular && (
-                  <div className="absolute -top-6 -right-6 bg-teal-500 text-white text-xs font-bold px-4 py-1 rotate-45 transform w-28">
-                    POPULAR
-                  </div>
-                )}
-                {SUBSCRIPTION_PLANS.PREMIUM.hasPromotion && (
-                  <div className="absolute top-2 left-2 bg-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full">
-                    {PROMOTION_CODES.find(p => p.code === SUBSCRIPTION_PLANS.PREMIUM.promotionCode)?.badgeText || `${SUBSCRIPTION_PLANS.PREMIUM.discountPercentage}% OFF`}
-                  </div>
-                )}
-                <div className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-br from-teal-50 to-teal-100 dark:from-teal-900/20 dark:to-teal-800/10 -z-10 opacity-50"></div>
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                  {SUBSCRIPTION_PLANS.PREMIUM.name}
-                </h3>
-                <div className="text-4xl font-bold text-gray-800 dark:text-white mb-6">
-                  {SUBSCRIPTION_PLANS.PREMIUM.hasPromotion ? (
-                    <>
-                      <span className="line-through text-2xl text-gray-400 mr-2">${SUBSCRIPTION_PLANS.PREMIUM.price}</span>
-                      ${SUBSCRIPTION_PLANS.PREMIUM.discountedPrice}
-                    </>
-                  ) : (
-                    `$${SUBSCRIPTION_PLANS.PREMIUM.price}`
-                  )}
-                  <span className="text-sm text-gray-500 font-normal">/{SUBSCRIPTION_PLANS.PREMIUM.billing}</span>
-                </div>
-                <ul className="space-y-3 mb-8">
-                  {SUBSCRIPTION_PLANS.PREMIUM.features.map((feature, index) => (
-                    <li key={index} className="flex items-center text-gray-600 dark:text-gray-300">
-                      <svg className="w-5 h-5 text-teal-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                      </svg>
-                      <strong>{feature}</strong>
-                    </li>
-                  ))}
-                </ul>
-                <button
-                  onClick={() => {
-                    if (!paymentsEnabled) {
-                      // Show the cool ComingSoon modal instead of redirecting
-                      showComingSoon({
-                        featureName: 'Premium Plan',
-                        description: 'The Premium plan is coming soon! We\'re currently finalizing our payment system and premium features. You can continue using our free plan in the meantime.'
-                      });
-                      return;
-                    }
-                    
-                    const user = localStorage.getItem('user');
-                    if (user) {
-                      // User is logged in, go directly to payment
-                      window.location.href = `/payment?plan=${SUBSCRIPTION_PLANS.PREMIUM.id}`;
-                    } else {
-                      // User is not logged in, go to auth with returnUrl
-                      window.location.href = `/auth?returnUrl=/payment?plan=${SUBSCRIPTION_PLANS.PREMIUM.id}`;
-                    }
-                  }}
-                  className="block w-full py-3 px-4 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-center text-white font-medium rounded-lg transition-colors shadow-md"
-                >
-                  {SUBSCRIPTION_PLANS.PREMIUM.cta}
-                </button>
-              </div>
-
-              {/* Pro Plan */}
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 hover:shadow-xl transition-shadow border-t-4 border-purple-500 dark:border-purple-400 relative overflow-hidden">
-                {SUBSCRIPTION_PLANS.PRO.hasPromotion && (
-                  <div className="absolute top-2 left-2 bg-purple-500 text-white text-xs font-bold px-2 py-1 rounded-full">
-                    {PROMOTION_CODES.find(p => p.code === SUBSCRIPTION_PLANS.PRO.promotionCode)?.badgeText || `${SUBSCRIPTION_PLANS.PRO.discountPercentage}% OFF`}
-                  </div>
-                )}
-                <div className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/10 -z-10 opacity-50"></div>
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                  {SUBSCRIPTION_PLANS.PRO.name}
-                </h3>
-                <div className="text-4xl font-bold text-gray-800 dark:text-white mb-6">
-                  {SUBSCRIPTION_PLANS.PRO.hasPromotion ? (
-                    <>
-                      <span className="line-through text-2xl text-gray-400 mr-2">${SUBSCRIPTION_PLANS.PRO.price}</span>
-                      ${SUBSCRIPTION_PLANS.PRO.discountedPrice}
-                    </>
-                  ) : (
-                    `$${SUBSCRIPTION_PLANS.PRO.price}`
-                  )}
-                  <span className="text-sm text-gray-500 font-normal">/{SUBSCRIPTION_PLANS.PRO.billing}</span>
-                </div>
-                <ul className="space-y-3 mb-8">
-                  {SUBSCRIPTION_PLANS.PRO.features.map((feature, index) => (
-                    <li key={index} className="flex items-center text-gray-600 dark:text-gray-300">
-                      <svg className="w-5 h-5 text-purple-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                      </svg>
-                      <strong>{feature}</strong>
-                    </li>
-                  ))}
-                </ul>
-                <button
-                  onClick={() => {
-                    if (!paymentsEnabled) {
-                      // Show the cool ComingSoon modal instead of redirecting
-                      showComingSoon({
-                        featureName: 'Pro Plan',
-                        description: 'The Pro plan is coming soon! We\'re currently finalizing our payment system and advanced pro features. You can continue using our free plan in the meantime.'
-                      });
-                      return;
-                    }
-                    
-                    const user = localStorage.getItem('user');
-                    if (user) {
-                      // User is logged in, go directly to payment
-                      window.location.href = `/payment?plan=${SUBSCRIPTION_PLANS.PRO.id}`;
-                    } else {
-                      // User is not logged in, go to auth with returnUrl
-                      window.location.href = `/auth?returnUrl=/payment?plan=${SUBSCRIPTION_PLANS.PRO.id}`;
-                    }
-                  }}
-                  className="block w-full py-3 px-4 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-center text-white font-medium rounded-lg transition-colors shadow-md"
-                >
-                  {SUBSCRIPTION_PLANS.PRO.cta}
-                </button>
               </div>
             </div>
           </div>
         </section>
 
         {/* Testimonials Section */}
-        <section id="testimonials" className="py-20 bg-white dark:bg-gray-900">
+        <section id="testimonials" className="py-20 bg-gray-50 dark:bg-gray-800">
           <div className="container mx-auto px-4">
             <h2 className="text-4xl font-bold text-center text-gray-900 dark:text-white mb-12">
               What Our Users Say
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-8 max-w-6xl mx-auto">
-              <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg shadow-md">
-                <div className="flex items-center mb-4">
-                  <div className="h-12 w-12 rounded-full bg-teal-100 dark:bg-teal-900 flex items-center justify-center text-teal-500 dark:text-teal-300 text-xl font-bold mr-4">
-                    S
+            {loadingTestimonials ? (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                {[1, 2, 3].map((_, index) => (
+                  <div key={index} className="bg-white dark:bg-gray-700 p-6 rounded-lg shadow-lg animate-pulse">
+                    <div className="flex items-center mb-4">
+                      <div className="h-12 w-12 rounded-full bg-gray-200 dark:bg-gray-600 mr-4"></div>
+                      <div>
+                        <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded w-24 mb-2"></div>
+                        <div className="h-3 bg-gray-100 dark:bg-gray-700 rounded w-32"></div>
+                      </div>
+                    </div>
+                    <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded w-full mb-2"></div>
+                    <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded w-full mb-2"></div>
+                    <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded w-3/4"></div>
                   </div>
-                  <div>
-                    <h4 className="text-lg font-semibold text-gray-900 dark:text-white">Sarah K.</h4>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Social Media Manager</p>
-                  </div>
-                </div>
-                <p className="text-gray-600 dark:text-gray-300 italic">
-                  "This tool has saved me hours of work every week. I can now crop all my videos for different platforms in minutes!"
-                </p>
+                ))}
               </div>
-              <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg shadow-md">
-                <div className="flex items-center mb-4">
-                  <div className="h-12 w-12 rounded-full bg-teal-100 dark:bg-teal-900 flex items-center justify-center text-teal-500 dark:text-teal-300 text-xl font-bold mr-4">
-                    M
-                  </div>
-                  <div>
-                    <h4 className="text-lg font-semibold text-gray-900 dark:text-white">Michael T.</h4>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Content Creator</p>
-                  </div>
-                </div>
-                <p className="text-gray-600 dark:text-gray-300 italic">
-                  "The batch processing feature is a game-changer. I can now prepare content for all my social channels at once."
-                </p>
+            ) : testimonials.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                {testimonials.map((testimonial) => {
+                  // Generate a color based on the first letter of the name
+                  const colors = [
+                    'bg-teal-100 dark:bg-teal-900 text-teal-500',
+                    'bg-orange-100 dark:bg-orange-900 text-orange-500',
+                    'bg-blue-100 dark:bg-blue-900 text-blue-500',
+                    'bg-purple-100 dark:bg-purple-900 text-purple-500',
+                    'bg-pink-100 dark:bg-pink-900 text-pink-500',
+                    'bg-green-100 dark:bg-green-900 text-green-500'
+                  ];
+                  const colorIndex = testimonial.name.charCodeAt(0) % colors.length;
+                  const colorClass = colors[colorIndex];
+                  
+                  return (
+                    <div key={testimonial.id} className="bg-white dark:bg-gray-700 p-6 rounded-lg shadow-lg">
+                      <div className="flex items-center mb-4">
+                        <div className={`h-12 w-12 rounded-full ${colorClass} flex items-center justify-center text-xl font-bold mr-4`}>
+                          {testimonial.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-gray-900 dark:text-white">{testimonial.name}</h3>
+                          <p className="text-gray-500 dark:text-gray-400 text-sm">{testimonial.role || 'User'}</p>
+                        </div>
+                      </div>
+                      <p className="text-gray-600 dark:text-gray-300">"{testimonial.message}"</p>
+                      <p className="text-gray-500 dark:text-gray-400 text-xs mt-2">Posted on {testimonial.createdAt.toLocaleDateString()}</p>
+                      {testimonial.featured && (
+                        <div className="mt-4 flex">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <svg key={star} className="h-5 w-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                            </svg>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
-              <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg shadow-md">
-                <div className="flex items-center mb-4">
-                  <div className="h-12 w-12 rounded-full bg-teal-100 dark:bg-teal-900 flex items-center justify-center text-teal-500 dark:text-teal-300 text-xl font-bold mr-4">
-                    J
-                  </div>
-                  <div>
-                    <h4 className="text-lg font-semibold text-gray-900 dark:text-white">Jessica L.</h4>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Marketing Director</p>
-                  </div>
-                </div>
-                <p className="text-gray-600 dark:text-gray-300 italic">
-                  "The video quality is excellent even after cropping. This tool maintains the professional look our brand needs."
-                </p>
+            ) : (
+              <div className="text-center py-12">
+                <p className="text-gray-500 dark:text-gray-400">No testimonials available yet. Be the first to share your experience!</p>
               </div>
-              <div className="bg-gradient-to-br from-teal-50 to-blue-50 dark:from-gray-800 dark:to-gray-700 p-6 rounded-lg shadow-md border border-teal-100 dark:border-teal-900 text-center flex flex-col justify-center">
-                <div className="mb-4">
-                  <div className="h-16 w-16 bg-teal-100 dark:bg-teal-900 rounded-full flex items-center justify-center mx-auto mb-2">
-                    <svg className="h-8 w-8 text-teal-600 dark:text-teal-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                    </svg>
-                  </div>
-                  <h4 className="text-lg font-semibold text-gray-900 dark:text-white">Share Your Experience</h4>
-                </div>
-                
-                <p className="text-gray-600 dark:text-gray-300 mb-6">
-                  Love using {APP_IDENTITY.name}? We'd love to hear your success story!
-                </p>
-                
-                <Link 
-                  href="/testimonials/submit" 
-                  className="inline-block py-3 px-6 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white font-medium rounded-lg transition-colors shadow-md"
-                >
-                  Submit Your Testimonial
-                </Link>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* CTA Section */}
-        <section className="py-20 bg-gradient-to-br from-teal-500 to-teal-700 dark:from-teal-700 dark:to-teal-900 text-white">
-          <div className="container mx-auto px-4 text-center">
-            <h2 className="text-4xl font-bold mb-6">Ready to Transform Your Video Workflow?</h2>
-            <p className="text-xl mb-8 max-w-3xl mx-auto">
-              Join thousands of content creators who are saving time and producing better content with our bulk video cropping tool.
-            </p>
-            <Link
-              href="/auth"
-              className="inline-block bg-white text-teal-600 px-8 py-4 rounded-lg font-semibold hover:bg-gray-100 transition-all transform hover:-translate-y-1 shadow-lg"
-            >
-              Get Started Today
-            </Link>
-          </div>
-        </section>
-
-        {/* Back to Top Button */}
-        <button
-          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-          className="fixed bottom-8 right-8 bg-teal-500 text-white rounded-full p-3 shadow-lg hover:bg-teal-600 transition-colors z-50"
-        >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
-          </svg>
-        </button>
-
-        {/* Footer */}
-        <footer className="bg-gray-900 text-gray-400 py-12">
-          <div className="container mx-auto px-4">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-              <div>
-                <h3 className="text-white text-lg font-semibold mb-4">{APP_IDENTITY.name}</h3>
-                <p className="mb-4">
-                  {APP_IDENTITY.description}
-                </p>
-                <div className="flex space-x-4 mt-4">
-                  <Link href={SOCIAL_MEDIA.twitter.url} className="text-gray-400 hover:text-teal-400 transition-colors">
-                    <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M23 3a10.9 10.9 0 01-3.14 1.53 4.48 4.48 0 00-7.86 3v1A10.66 10.66 0 013 4s-4 9 5 13a11.64 11.64 0 01-7 2c9 5 20 0 20-11.5a4.5 4.5 0 00-.08-.83A7.72 7.72 0 0023 3z" />
-                    </svg>
-                  </Link>
-                  <Link href={SOCIAL_MEDIA.linkedin.url} className="text-gray-400 hover:text-teal-400 transition-colors">
-                    <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16.5 6a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zm0 9a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zm0 6a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0" />
-                    </svg>
-                  </Link>
-                  <Link href={SOCIAL_MEDIA.instagram.url} className="text-gray-400 hover:text-teal-400 transition-colors">
-                    <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 21.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                  </Link>
-                </div>
-              </div>
-              <div>
-                <h4 className="text-white text-md font-semibold mb-4">Product</h4>
-                <ul className="space-y-2">
-                  <li>
-                    <Link href="#features" className="hover:text-teal-400 transition-colors">
-                      Features
-                    </Link>
-                  </li>
-                  <li>
-                    <Link href="#pricing" className="hover:text-teal-400 transition-colors">
-                      Pricing
-                    </Link>
-                  </li>
-                  <li>
-                    <Link href="/editor" className="hover:text-teal-400 transition-colors">
-                      Try Demo
-                    </Link>
-                  </li>
-                </ul>
-              </div>
-              <div>
-                <h4 className="text-white text-md font-semibold mb-4">Company</h4>
-                <ul className="space-y-2">
-                  <li>
-                    <Link href="/about" className="hover:text-teal-400 transition-colors">
-                      About Us
-                    </Link>
-                  </li>
-                  <li>
-                    <Link href="/contact" className="hover:text-teal-400 transition-colors">
-                      Contact
-                    </Link>
-                  </li>
-                  <li>
-                    <Link href="/careers" className="hover:text-teal-400 transition-colors">
-                      Careers
-                    </Link>
-                  </li>
-                </ul>
-              </div>
-              <div>
-                <h4 className="text-white text-md font-semibold mb-4">Legal</h4>
-                <ul className="space-y-2">
-                  <li>
-                    <Link href={LEGAL_DOCS.privacyPolicy} className="hover:text-teal-400 transition-colors">
-                      Privacy Policy
-                    </Link>
-                  </li>
-                  <li>
-                    <Link href={LEGAL_DOCS.termsOfService} className="hover:text-teal-400 transition-colors">
-                      Terms of Service
-                    </Link>
-                  </li>
-                  <li>
-                    <Link href={LEGAL_DOCS.cookiePolicy} className="hover:text-teal-400 transition-colors">
-                      Cookie Policy
-                    </Link>
-                  </li>
-                </ul>
-              </div>
-            </div>
-            <div className="border-t border-gray-800 mt-8 pt-8 text-center">
-              <p className="text-sm">
-                {APP_IDENTITY.copyright}
+            )}
+            
+            <div className="text-center mt-12">
+              <Link 
+                href="/testimonials" 
+                className="inline-flex items-center mr-4 px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600"
+              >
+                View All Testimonials
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </Link>
+              <Link 
+                href="/testimonials/submit" 
+                className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+                </svg>
+                Share Your Experience
+              </Link>
+              <p className="mt-4 text-gray-500 dark:text-gray-400">
+                Join the hundreds of users who have already shared their feedback.
               </p>
-              {PROMOTION_CODES.length > 0 && (
-                <p className="mt-2 text-xs">
-                  {PROMOTION_CODES.map((promo, index) => (
-                    <span key={promo.code}>
-                      {index > 0 && " • "}
-                      {promo.description || `${promo.discountPercentage}% off ${promo.applicablePlans.join(", ")} with code ${promo.code}`}
-                    </span>
-                  ))}
-                </p>
-              )}
             </div>
           </div>
-        </footer>
+        </section>
       </main>
     </div>
   );

@@ -120,10 +120,10 @@ function PaymentSuccessContent() {
                   </Link>
                   
                   <Link
-                    href="/dashboard"
+                    href="/profile"
                     className="inline-block bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-white font-medium rounded-lg px-6 py-3 transition-colors"
                   >
-                    Go to Dashboard
+                    Go to Profile
                   </Link>
                 </div>
               </div>

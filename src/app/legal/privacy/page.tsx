@@ -8,12 +8,12 @@ import { APP_EMAILS } from '@/config/branding';
 
 export default function PrivacyPolicy() {
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="flex flex-col">
       {/* Floating Side Navigation */}
       <LegalSideNav />
       
       {/* Main Content */}
-      <div className="flex-grow bg-gray-50 py-12">
+      <div className="bg-gray-50 py-12">
         <div className="max-w-4xl mx-auto px-6 bg-white rounded-lg shadow-lg p-8">
           {/* Header */}
           <div className="border-b border-gray-200 pb-6 mb-8">
@@ -38,7 +38,7 @@ export default function PrivacyPolicy() {
             <section id="intro" className="p-4 border-l-4 border-teal-500 bg-gray-50">
               <h2 className="text-2xl font-bold text-gray-800 mb-4">1. Introduction</h2>
               <p className="text-gray-700">
-                Welcome to Bulk Video Cropper. This Privacy Policy explains how we collect, use, and protect your information when you use our video editing platform. Our AI-powered system processes your videos to optimize them for different social media platforms while maintaining their visual integrity.
+                Welcome to Bulk Video Cropper. This Privacy Policy explains how we collect, use, and protect your information when you use our video editing platform.
               </p>
             </section>
             
@@ -49,8 +49,7 @@ export default function PrivacyPolicy() {
               </p>
               <ul className="list-disc pl-6 text-gray-700 space-y-1">
                 <li>Account information (name, email, password)</li>
-                <li>Payment details for premium subscriptions</li>
-                <li>Videos you upload for processing</li>
+                <li>Videos you upload for editing</li>
                 <li>Usage statistics and preferences</li>
               </ul>
             </section>
@@ -61,11 +60,9 @@ export default function PrivacyPolicy() {
                 We use your information to:
               </p>
               <ul className="list-disc pl-6 text-gray-700 space-y-1">
-                <li>Process and optimize your video content</li>
-                <li>Improve our AI cropping algorithms</li>
-                <li>Enhance video processing performance</li>
-                <li>Provide personalized support</li>
-                <li>Analyze usage patterns to improve our platform</li>
+                <li>Process your video content according to your specifications</li>
+                <li>Provide support for our services</li>
+                <li>Analyze usage patterns to improve our platform's functionality</li>
               </ul>
             </section>
             
@@ -82,15 +79,20 @@ export default function PrivacyPolicy() {
                 If you have any questions about this Privacy Policy, please contact us at:
               </p>
               <div className="bg-white p-4 rounded border border-gray-200">
-                <p className="text-gray-700"><strong>Email:</strong> {APP_EMAILS.privacy}</p>
-                <p className="text-gray-700"><strong>Address:</strong> 123 Video Lane, San Francisco, CA 94103, USA</p>
+                <p className="text-gray-700">
+                  <strong>Email: </strong>
+                  <a 
+                    href={`mailto:${APP_EMAILS.support}`}
+                    className="text-teal-600 hover:text-teal-800 hover:underline"
+                  >
+                    {APP_EMAILS.support}
+                  </a>
+                </p>
               </div>
             </section>
           </div>
         </div>
       </div>
-      
-      <Footer />
     </div>
   );
 }

@@ -1,7 +1,8 @@
 import { initializeApp, getApps } from 'firebase/app';
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail } from 'firebase/auth';
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail, sendEmailVerification, applyActionCode } from 'firebase/auth';
 import { getFirestore, collection, doc, setDoc, getDoc, updateDoc, getDocs, query, where } from 'firebase/firestore';
 import { User } from '../types/user';
+import { getAuthErrorMessage } from '../utils/authErrorHandler';
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -30,8 +31,12 @@ export const createUser = async (email: string, password: string) => {
       createdAt: new Date(),
       subscription: 'free',
       usedQuota: 0,
+      emailVerified: false,
       nextRenewal: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days from now
     });
+
+    // Send email verification
+    await sendEmailVerification(user);
 
     return user;
   } catch (error) {
@@ -139,7 +144,88 @@ export const resetPassword = async (email: string) => {
     console.error('Password reset error:', error);
     return { 
       success: false, 
-      message: error.message || 'Failed to send password reset email. Please try again.'
+      message: getAuthErrorMessage(error)
+    };
+  }
+};
+
+// Email verification functions
+export const sendVerificationEmail = async () => {
+  try {
+    const user = auth.currentUser;
+    if (!user) {
+      return { 
+        success: false, 
+        message: 'Please sign in first before requesting a verification email.'
+      };
+    }
+
+    await sendEmailVerification(user);
+    return { success: true, message: 'Verification email sent successfully' };
+  } catch (error: any) {
+    console.error('Email verification error:', error);
+    return { 
+      success: false, 
+      message: getAuthErrorMessage(error)
+    };
+  }
+};
+
+export const checkEmailVerified = async (uid: string) => {
+  try {
+    // First check Firebase Auth emailVerified property
+    const user = auth.currentUser;
+    if (user && user.emailVerified) {
+      // Update Firestore if needed
+      const userDoc = await getDoc(doc(db, 'users', uid));
+      const userData = userDoc.data() as User;
+      
+      if (!userData.emailVerified) {
+        await updateDoc(doc(db, 'users', uid), {
+          emailVerified: true
+        });
+      }
+      
+      return { verified: true };
+    }
+
+    // If not verified in Auth, check if we need to reload the user to get latest status
+    if (user) {
+      await user.reload();
+      if (user.emailVerified) {
+        // Update Firestore
+        await updateDoc(doc(db, 'users', uid), {
+          emailVerified: true
+        });
+        return { verified: true };
+      }
+    }
+
+    return { verified: false };
+  } catch (error: any) {
+    console.error('Check email verification error:', error);
+    return { verified: false, error: error.message };
+  }
+};
+
+export const verifyEmail = async (actionCode: string) => {
+  try {
+    await applyActionCode(auth, actionCode);
+    
+    // Update user's verification status in Firestore if they're logged in
+    const user = auth.currentUser;
+    if (user) {
+      await updateDoc(doc(db, 'users', user.uid), {
+        emailVerified: true
+      });
+    }
+    
+    return { success: true, message: 'Email verified successfully' };
+  } catch (error: any) {
+    console.error('Email verification error:', error);
+    return { 
+      success: false, 
+      message: getAuthErrorMessage(error)
     };
   }
 };
