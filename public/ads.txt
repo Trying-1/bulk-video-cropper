@@ -1,0 +1,4 @@
+# Ads.txt file for Bulk Video Cropper
+# Created: 2025-05-27
+
+google.com, pub-8892558563992969, DIRECT, f08c47fec0942fa0

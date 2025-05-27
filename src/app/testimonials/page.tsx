@@ -4,67 +4,131 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { getApprovedTestimonials, Testimonial } from '@/services/testimonialService';
 import { APP_IDENTITY } from '@/config/branding';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
 import { db } from '@/config/firebase';
 
+// Type definition for Firebase timestamp
+type FirebaseTimestamp = {
+  seconds: number;
+  nanoseconds: number;
+  toDate?: () => Date;
+};
+
+// Define our local testimonial type to handle the timestamp variations
+interface LocalTestimonial {
+  id: string;
+  name: string;
+  role?: string | null | undefined;
+  message: string;
+  email: string;
+  userId?: string;
+  rating?: number;
+  approved: boolean;
+  featured: boolean;
+  createdAt: Date | FirebaseTimestamp;
+  updatedAt: Date | FirebaseTimestamp;
+}
+
+// Convert Testimonial from service to our LocalTestimonial type
+const convertToLocalTestimonial = (testimonial: Testimonial): LocalTestimonial => {
+  return {
+    ...testimonial,
+    // Ensure the timestamp types are properly handled
+    createdAt: testimonial.createdAt,
+    updatedAt: testimonial.updatedAt
+  };
+}
+
 export default function TestimonialsPage() {
-  const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
-  const [filteredTestimonials, setFilteredTestimonials] = useState<Testimonial[]>([]);
+  const [testimonials, setTestimonials] = useState<LocalTestimonial[]>([]);
+  const [filteredTestimonials, setFilteredTestimonials] = useState<LocalTestimonial[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const testimonialsPerPage = 9; // Show 9 per page for a nice 3x3 grid
   const [dateFilter, setDateFilter] = useState('all'); // 'all', 'last-week', 'last-month', 'last-year'
 
+  // State for error messages
+  const [error, setError] = useState<string | null>(null);
+
   useEffect(() => {
     const fetchTestimonials = async () => {
       try {
         setLoading(true);
+        setError(null);
         console.log('Fetching approved testimonials for display page...');
         
-        // Direct database query to troubleshoot
         try {
-          const testimonialsRef = collection(db, 'testimonials');
-          const q = query(testimonialsRef, where('approved', '==', true));
-          const querySnapshot = await getDocs(q);
+          // Use the service method as the primary approach
+          const allTestimonials = await getApprovedTestimonials(true, 100);
+          console.log('Testimonials fetched:', allTestimonials.length);
           
-          console.log('DIRECT QUERY - Found testimonials:', querySnapshot.size);
-          
-          if (querySnapshot.size > 0) {
-            const directTestimonials = querySnapshot.docs.map(doc => {
-              const data = doc.data();
-              console.log('Testimonial data:', data);
-              return {
-                id: doc.id,
-                name: data.name || 'Anonymous',
-                role: data.role || 'User',
-                message: data.message || '',
-                email: data.email || '',
-                approved: data.approved || false,
-                featured: data.featured || false,
-                rating: data.rating || 0,
-                createdAt: data.createdAt || new Date(),
-                updatedAt: data.updatedAt || new Date()
+          if (allTestimonials.length > 0) {
+            // Convert to LocalTestimonial type
+            const localTestimonials = allTestimonials.map(convertToLocalTestimonial);
+            
+            // Sort testimonials by date (newest first)
+            const sortedTestimonials = localTestimonials.sort((a, b) => {
+              // Safely handle various timestamp formats
+              const getTime = (timestamp: Date | FirebaseTimestamp) => {
+                if (timestamp instanceof Date) {
+                  return timestamp.getTime();
+                } else if (timestamp && typeof timestamp.seconds === 'number') {
+                  return timestamp.seconds * 1000;
+                } else {
+                  return 0; // Fallback
+                }
               };
+              
+              return getTime(b.createdAt) - getTime(a.createdAt);
             });
-            console.log('Setting direct testimonials:', directTestimonials.length);
-            setTestimonials(directTestimonials);
-            setFilteredTestimonials(directTestimonials);
+            
+            setTestimonials(sortedTestimonials);
+            setFilteredTestimonials(sortedTestimonials);
           } else {
-            console.log('No testimonials found with direct query');
-            setTestimonials([]);
-            setFilteredTestimonials([]);
+            // If service method returns empty, try direct query as fallback
+            console.log('No testimonials from service, trying direct query');
+            const testimonialsRef = collection(db, 'testimonials');
+            const q = query(testimonialsRef, where('approved', '==', true));
+            const querySnapshot = await getDocs(q);
+            
+            if (querySnapshot.size > 0) {
+              const directTestimonials = querySnapshot.docs.map(doc => {
+                const data = doc.data();
+                return {
+                  id: doc.id,
+                  name: data.name || 'Anonymous',
+                  role: data.role || 'User',
+                  message: data.message || '',
+                  email: data.email || '',
+                  approved: data.approved || false,
+                  featured: data.featured || false,
+                  rating: data.rating || 0,
+                  createdAt: data.createdAt || new Date(),
+                  updatedAt: data.updatedAt || new Date()
+                };
+              });
+              
+              // Sort by date (newest first)
+              const sortedDirectTestimonials = directTestimonials.sort((a, b) => {
+                const dateA = a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt.seconds * 1000);
+                const dateB = b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt.seconds * 1000);
+                return dateB.getTime() - dateA.getTime();
+              });
+              
+              setTestimonials(sortedDirectTestimonials);
+              setFilteredTestimonials(sortedDirectTestimonials);
+            } else {
+              console.log('No testimonials found');
+              setTestimonials([]);
+              setFilteredTestimonials([]);
+            }
           }
-        } catch (directError) {
-          console.error('Direct query error:', directError);
-          
-          // Fallback to service method
-          const allTestimonials = await getApprovedTestimonials(false, 100);
-          console.log('Fallback testimonials fetched:', allTestimonials.length);
-          setTestimonials(allTestimonials);
-          setFilteredTestimonials(allTestimonials);
+        } catch (fetchError) {
+          console.error('Error fetching testimonials:', fetchError);
+          setError('Unable to load testimonials. Please try again later.');
+          setTestimonials([]);
+          setFilteredTestimonials([]);
         }
-      } catch (error) {
-        console.error('Error fetching testimonials:', error);
       } finally {
         setLoading(false);
       }
@@ -202,6 +266,22 @@ export default function TestimonialsPage() {
           </div>
         </div>
 
+        {/* Error message display */}
+        {error && (
+          <div className="max-w-3xl mx-auto bg-red-50 dark:bg-red-900 border-l-4 border-red-500 p-4 mb-8">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-red-700 dark:text-red-200">{error}</p>
+              </div>
+            </div>
+          </div>
+        )}
+        
         {loading ? (
           <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {Array(6).fill(0).map((_, index) => (
@@ -243,15 +323,32 @@ export default function TestimonialsPage() {
                       </div>
                       <div className="text-right">
                         <p className="text-gray-500 dark:text-gray-400 text-sm">
-                          {testimonial.createdAt instanceof Date ? 
-                            testimonial.createdAt.toLocaleDateString() : 
-                            new Date(testimonial.createdAt.seconds * 1000).toLocaleDateString()}
+                          {(() => {
+                            try {
+                              // Handle different timestamp formats safely
+                              if (testimonial.createdAt instanceof Date) {
+                                return testimonial.createdAt.toLocaleDateString();
+                              } else if (testimonial.createdAt && testimonial.createdAt.seconds) {
+                                // Firestore Timestamp object
+                                return new Date(testimonial.createdAt.seconds * 1000).toLocaleDateString();
+                              } else if (testimonial.createdAt && testimonial.createdAt.toDate) {
+                                // Firestore Timestamp with toDate method
+                                return testimonial.createdAt.toDate().toLocaleDateString();
+                              } else {
+                                // Fallback if no valid date format
+                                return 'Unknown date';
+                              }
+                            } catch (err) {
+                              console.error('Error formatting date:', err);
+                              return 'Unknown date';
+                            }
+                          })()}
                         </p>
                         {/* Show rating stars if available, otherwise show featured badge */}
-                        {testimonial.rating ? (
+                        {testimonial.rating !== undefined && testimonial.rating !== null ? (
                           <div className="flex items-center mt-1">
                             {Array.from({ length: 5 }).map((_, i) => (
-                              <svg key={i} className={`w-4 h-4 ${i < testimonial.rating ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'}`} fill="currentColor" viewBox="0 0 20 20">
+                              <svg key={i} className={`w-4 h-4 ${i < (testimonial.rating || 0) ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'}`} fill="currentColor" viewBox="0 0 20 20">
                                 <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118l-2.799-2.034c-.784-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                               </svg>
                             ))}

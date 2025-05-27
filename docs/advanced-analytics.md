@@ -70,6 +70,52 @@ Metrics related to application performance and reliability:
 
 ## Implementation Details
 
+### Firebase Analytics Integration
+
+**Status: Implemented on May 27, 2025**
+
+The application now uses Firebase Analytics for comprehensive tracking of user behavior and application usage. This implementation provides real-time insights into user actions without any additional cost.
+
+#### Key Components:
+
+1. **Analytics Context Provider** (`src/contexts/AnalyticsProvider.tsx`):
+   - Provides application-wide analytics capabilities
+   - Automatically tracks page views
+   - Exposes methods for custom event tracking
+
+2. **Analytics Hook** (`src/hooks/useAnalytics.ts`):
+   - Custom React hook for convenient analytics access in any component
+   - Handles page view tracking automatically
+   - Provides a simple API for tracking custom events
+
+3. **Firebase Integration** (`src/config/firebase.ts`):
+   - Added analytics initialization and utility functions
+   - Implements browser-safe detection to prevent SSR issues
+   - Provides higher-level tracking methods for different event types
+
+#### Usage Example:
+
+```tsx
+// In any component:
+import { useAnalytics } from '@/contexts/AnalyticsProvider';
+
+function VideoUploadButton() {
+  const { trackEvent } = useAnalytics();
+  
+  const handleUpload = (files) => {
+    // Track the upload event
+    trackEvent('video_upload', { 
+      video_count: files.length,
+      total_size_mb: calculateTotalSize(files)
+    });
+    
+    // Process files...
+  };
+  
+  return <button onClick={handleUpload}>Upload Videos</button>;
+}
+```
+
 ### Data Flow Architecture
 
 1. **Data Collection**: Event-based tracking of user actions and system performance

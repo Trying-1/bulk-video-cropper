@@ -68,6 +68,13 @@ This directory contains documentation for the Bulk Video Cropper application. Ea
 
 ## Technical Documentation
 
+- [advanced-analytics.md](advanced-analytics.md) 🆕
+  - Firebase Analytics implementation (May 27, 2025)
+  - User behavior tracking system
+  - Analytics Provider integration
+  - Custom event tracking
+  - Visualization and reporting capabilities
+
 - [ffmpeg-loading-strategies.md](ffmpeg-loading-strategies.md)
   - Analysis of different FFmpeg loading approaches
   - Impact on various monetization strategies

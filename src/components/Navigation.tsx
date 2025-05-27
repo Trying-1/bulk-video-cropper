@@ -153,10 +153,10 @@ function Navigation() {
                 </div>
               </div>
             ) : (
-              <div className="ml-3 relative">
+              <div className="ml-3 relative flex items-center">
                 <Link
                   href="/auth"
-                  className="bg-teal-500 text-white px-4 py-2 rounded-md hover:bg-teal-600"
+                  className="bg-teal-500 text-white px-4 py-2 rounded-md hover:bg-teal-600 whitespace-nowrap flex-shrink-0 inline-flex items-center justify-center"
                 >
                   Sign In
                 </Link>
