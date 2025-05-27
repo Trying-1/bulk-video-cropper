@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import AuthLayout from '@/components/auth/AuthLayout';
 import { getUserSessionCookie } from '@/utils/cookies';
 import { useAuth } from '@/contexts/AuthContext';
+import SearchParamsWrapper from '@/components/SearchParamsWrapper';
 
 export default function AuthPage() {
   const router = useRouter();
@@ -53,5 +54,9 @@ export default function AuthPage() {
   }
   
   // Show auth form only if no existing session was found
-  return <AuthLayout />;
+  return (
+    <SearchParamsWrapper>
+      <AuthLayout />
+    </SearchParamsWrapper>
+  );
 }

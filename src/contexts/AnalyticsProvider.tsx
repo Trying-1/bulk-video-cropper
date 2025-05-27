@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, createContext, useContext, ReactNode } from 'react';
+import { useEffect, createContext, useContext, ReactNode, Suspense } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { initAnalytics, trackPageView, trackEvent } from '@/config/firebase';
 
@@ -21,17 +21,10 @@ interface AnalyticsProviderProps {
   children: ReactNode;
 }
 
-export function AnalyticsProvider({ children }: AnalyticsProviderProps) {
+// SearchParams component needs to be inside Suspense
+function AnalyticsTracking() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-
-  // Initialize analytics when component mounts
-  useEffect(() => {
-    const init = async () => {
-      await initAnalytics();
-    };
-    init();
-  }, []);
 
   // Track page views when route changes
   useEffect(() => {
@@ -50,6 +43,18 @@ export function AnalyticsProvider({ children }: AnalyticsProviderProps) {
     }
   }, [pathname, searchParams]);
 
+  return null; // This component doesn't render anything
+}
+
+export function AnalyticsProvider({ children }: AnalyticsProviderProps) {
+  // Initialize analytics when component mounts
+  useEffect(() => {
+    const init = async () => {
+      await initAnalytics();
+    };
+    init();
+  }, []);
+
   // Function to track custom events
   const handleTrackEvent = (eventName: string, eventParams?: Record<string, any>) => {
     trackEvent(eventName, eventParams);
@@ -59,6 +64,9 @@ export function AnalyticsProvider({ children }: AnalyticsProviderProps) {
   // Provide the analytics context to children
   return (
     <AnalyticsContext.Provider value={{ trackEvent: handleTrackEvent }}>
+      <Suspense fallback={null}>
+        <AnalyticsTracking />
+      </Suspense>
       {children}
     </AnalyticsContext.Provider>
   );
