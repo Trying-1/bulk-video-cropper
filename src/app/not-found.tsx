@@ -1,30 +1,11 @@
 'use client';
 
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { Suspense } from 'react';
 import { APP_IDENTITY } from '@/config/branding';
+import NotFoundContent from './(error-handling)/not-found-content';
 
-export default function NotFound() {
-  const router = useRouter();
-  const [countdown, setCountdown] = useState(5);
-  
-  // Automatically redirect to landing page after 5 seconds
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCountdown(prev => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          router.push('/');
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-    
-    return () => clearInterval(timer);
-  }, [router]);
-  
+// Loading fallback for the Suspense boundary
+function NotFoundFallback() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <div className="max-w-md w-full text-center">
@@ -33,27 +14,19 @@ export default function NotFound() {
         <p className="text-gray-500 mb-8">
           Sorry, the page you are looking for doesn't exist or has been moved.
         </p>
-        
-        <div className="flex justify-center space-x-4">
-          <Link
-            href="/"
-            className="px-4 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 transition-colors"
-          >
-            Go Home
-          </Link>
-          
-          <button
-            onClick={() => router.back()}
-            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors"
-          >
-            Go Back
-          </button>
-        </div>
-        
-        <div className="mt-6 text-gray-500 text-sm">
-          Redirecting to home in <span className="text-teal-600 font-medium">{countdown}</span> seconds...
+        <div className="mt-6">
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-teal-500 border-r-transparent"></div>
         </div>
       </div>
     </div>
+  );
+}
+
+// Main 404 page component with Suspense boundary
+export default function NotFound() {
+  return (
+    <Suspense fallback={<NotFoundFallback />}>
+      <NotFoundContent />
+    </Suspense>
   );
 }
