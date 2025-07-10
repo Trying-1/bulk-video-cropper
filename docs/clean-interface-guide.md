@@ -1,5 +1,7 @@
 # Clean Interface Design Guide
 
+> **Update (2025):** The UI is now even more minimal. Stats, plan badges, upgrade prompts, and feedback/support cards have been removed. The footer and its links are feature-flagged and may be hidden. The cookie consent banner is a small, pill-shaped button with modern styling.
+
 ## Overview
 
 This document outlines the Bulk Video Cropper's approach to maintaining a clean, distraction-free user interface. Our design philosophy prioritizes an unobtrusive user experience that focuses on functionality without interrupting the user's workflow. Based on direct user feedback, we've actively removed interruptive elements to create a smoother, more focused experience.

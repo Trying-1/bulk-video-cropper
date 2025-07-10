@@ -3,11 +3,13 @@
 import React from 'react';
 import Link from 'next/link';
 import { APP_IDENTITY, APP_EMAILS, APP_URLS, SOCIAL_MEDIA } from '@/config/branding';
+import { FEATURES } from '@/config/features';
 
 /**
  * Comprehensive footer component used across the application
  */
 export default function Footer() {
+  if (!FEATURES.SHOW_FOOTER) return null;
   return (
     <footer className="bg-gray-900 text-gray-400 py-12">
       <div className="container mx-auto px-4">
@@ -39,16 +41,20 @@ export default function Footer() {
           <div>
             <h4 className="text-white text-md font-semibold mb-4">Company</h4>
             <ul className="space-y-2">
+              {FEATURES.SHOW_ABOUT_LINK && (
               <li>
                 <Link href="/about" className="hover:text-teal-400 transition-colors">
                   About Us
                 </Link>
               </li>
+              )}
+              {FEATURES.SHOW_CONTACT_LINK && (
               <li>
                 <Link href="/contact" className="hover:text-teal-400 transition-colors">
                   Contact
                 </Link>
               </li>
+              )}
               <li>
                 <Link href="/" className="hover:text-teal-400 transition-colors">
                   Home
@@ -59,21 +65,27 @@ export default function Footer() {
           <div>
             <h4 className="text-white text-md font-semibold mb-4">Legal</h4>
             <ul className="space-y-2">
+              {FEATURES.SHOW_PRIVACY_POLICY_LINK && (
               <li>
                 <Link href="/legal/privacy" className="hover:text-teal-400 transition-colors">
                   Privacy Policy
                 </Link>
               </li>
+              )}
+              {FEATURES.SHOW_TERMS_OF_SERVICE_LINK && (
               <li>
                 <Link href="/legal/terms" className="hover:text-teal-400 transition-colors">
                   Terms of Service
                 </Link>
               </li>
+              )}
+              {FEATURES.SHOW_COOKIE_POLICY_LINK && (
               <li>
                 <Link href="/legal/cookies" className="hover:text-teal-400 transition-colors">
                   Cookie Policy
                 </Link>
               </li>
+              )}
             </ul>
           </div>
         </div>

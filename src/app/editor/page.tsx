@@ -1252,47 +1252,6 @@ function EditorContent() {
               <span className="text-sm font-medium">Back</span>
             </span>
           </button>
-          
-          {/* Usage Stats Display */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md px-4 py-2 flex flex-col sm:flex-row items-center gap-4">
-            <div className="flex items-center">
-              <div className="text-xs text-gray-700 dark:text-gray-300 mr-2 font-semibold">Session:</div>
-              <div className="flex items-center">
-                <span className="text-sm font-medium text-gray-800 dark:text-white">{usageInfo.uploadSessionUsed}/{uploadLimit}</span>
-                <div className="ml-2 w-20 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-gradient-to-r from-teal-400 to-blue-500 rounded-full"
-                    style={{ width: `${Math.min(100, (usageInfo.uploadSessionUsed / uploadLimit) * 100)}%` }}
-                  />
-                </div>
-              </div>
-            </div>
-            
-            <div className="flex items-center">
-              <div className="text-xs text-gray-700 dark:text-gray-300 mr-2 font-semibold">Credits:</div>
-              <div className="flex items-center">
-                {typeof usageInfo.creditsRemaining === 'number' ? (
-                  <>
-                    <span className="text-sm font-medium text-gray-800 dark:text-white">{usageInfo.creditsUsed}/{monthlyLimit}</span>
-                    <div className="ml-2 w-20 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                      <div 
-                        className={`h-full rounded-full ${usageInfo.creditsUsed / (monthlyLimit as number) > 0.8 ? 'bg-gradient-to-r from-orange-400 to-red-500' : 'bg-gradient-to-r from-teal-400 to-blue-500'}`}
-                        style={{ width: `${Math.min(100, (usageInfo.creditsUsed / (monthlyLimit as number)) * 100)}%` }}
-                      />
-                    </div>
-                  </>
-                ) : (
-                  <span className="text-sm font-medium flex items-center">
-                    <span className="mr-1 text-gray-800 dark:text-white">{usageInfo.creditsUsed}</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-teal-600 dark:text-teal-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                    </svg>
-                    <span className="ml-1 text-teal-600 dark:text-teal-400 font-semibold">Unlimited</span>
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
         </div>
       </div>
       
@@ -1424,11 +1383,79 @@ function EditorContent() {
                 </div>
                 
                 {/* Process Button Below Video */}
-                {currentVideo && (
-                  <div className="flex justify-end mt-2">
+                <div className="flex justify-end mt-2 gap-2">
+                  {/* Crop Mode Toggle Button (left of Process) */}
+                  {!cropMode ? (
+                    <button
+                      onClick={() => {
+                        if (!currentVideo) {
+                          setErrorMessage('Please upload a video first.');
+                          return;
+                        }
+                        setCropMode(true);
+                        if (videoRef.current) {
+                          videoRef.current.pause();
+                        }
+                        if (currentVideo.cropSettings.width === 0 || currentVideo.cropSettings.height === 0) {
+                          const containerWidth = videoContainerRef.current?.clientWidth || 640;
+                          const containerHeight = videoContainerRef.current?.clientHeight || 360;
+                          let cropWidth, cropHeight;
+                          if (videoRef.current && videoRef.current.videoWidth && videoRef.current.videoHeight) {
+                            const videoWidth = videoRef.current.videoWidth;
+                            const videoHeight = videoRef.current.videoHeight;
+                            const containerRatio = containerWidth / containerHeight;
+                            const videoRatio = videoWidth / videoHeight;
+                            if (videoRatio > containerRatio) {
+                              cropWidth = containerWidth;
+                              cropHeight = containerWidth / videoRatio;
+                            } else {
+                              cropHeight = containerHeight;
+                              cropWidth = containerHeight * videoRatio;
+                            }
+                          } else {
+                            const [width, height] = aspectRatio.split(":").map(Number);
+                            const aspectRatioValue = width / height;
+                            cropWidth = Math.min(300, containerWidth * 0.7);
+                            cropHeight = Math.round(cropWidth / aspectRatioValue);
+                          }
+                          const x = Math.max(0, Math.floor((containerWidth - cropWidth) / 2));
+                          const y = Math.max(0, Math.floor((containerHeight - cropHeight) / 2));
+                          handleCropChange({ x, y, width: cropWidth, height: cropHeight });
+                        }
+                      }}
+                      className="inline-flex items-center px-4 py-2 rounded-md text-sm font-medium text-white bg-[#fd7e14] hover:bg-[#e8730f] transition-all"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                      </svg>
+                      Enter Crop Mode
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        if (!currentVideo) {
+                          setErrorMessage('Please upload a video first.');
+                          return;
+                        }
+                        setCropMode(false);
+                      }}
+                      className="inline-flex items-center px-4 py-2 rounded-md text-sm font-medium text-white bg-gray-500 hover:bg-gray-600 transition-all"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                      Exit Crop Mode
+                    </button>
+                  )}
                     {/* Process Button */}
                     <button
-                      onClick={handleProcessVideo}
+                    onClick={() => {
+                      if (!currentVideo) {
+                        setErrorMessage('Please upload a video first.');
+                        return;
+                      }
+                      handleProcessVideo();
+                    }}
                       disabled={isProcessing || videos.length === 0}
                       className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-lg shadow-md hover:shadow-lg transform hover:translate-y-[-1px] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none overflow-hidden group"
                     >
@@ -1451,7 +1478,6 @@ function EditorContent() {
                       )}
                     </button>
                   </div>
-                )}
                 
                 {/* Crop Controls */}
                 {currentVideo && (
@@ -1797,7 +1823,13 @@ function EditorContent() {
                       </div>
                     ) : (
                       <>
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 mx-auto text-gray-400 dark:text-gray-500 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-10 w-10 mx-auto text-gray-400 dark:text-gray-500 mb-3 animate-bounce"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                         </svg>
                         <span className="text-sm text-gray-600 dark:text-gray-400">

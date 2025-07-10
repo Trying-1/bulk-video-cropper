@@ -10,16 +10,6 @@ export interface SubscriptionData {
   status: SubscriptionStatus;
   startDate: Date;
   nextBillingDate: Date;
-  stripeCustomerId?: string;
-  stripeSubscriptionId?: string;
-  cancelAtPeriodEnd?: boolean;
-  paymentMethod?: {
-    brand: string;
-    last4: string;
-    expiryMonth: number;
-    expiryYear: number;
-  };
-  price?: number;
 }
 
 export interface UserPreferences {

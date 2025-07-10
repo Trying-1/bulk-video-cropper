@@ -181,11 +181,7 @@ export class DatabaseService {
   
   public static async updateSubscription(
     uid: string, 
-    tier: SubscriptionTier,
-    stripeData?: {
-      customerId: string;
-      subscriptionId: string;
-    }
+    tier: SubscriptionTier
   ): Promise<void> {
     try {
       const user = await this.getUser(uid);
@@ -208,9 +204,7 @@ export class DatabaseService {
         tier,
         status: 'active',
         startDate: now,
-        nextBillingDate,
-        stripeCustomerId: stripeData?.customerId,
-        stripeSubscriptionId: stripeData?.subscriptionId,
+        nextBillingDate
       };
       
       await this.updateUser(uid, {
@@ -225,8 +219,7 @@ export class DatabaseService {
       // Log subscription change
       await this.logUserActivity(uid, 'upgrade', { 
         previousTier: user.subscription.tier,
-        newTier: tier,
-        hasStripeData: !!stripeData
+        newTier: tier
       });
       
     } catch (error) {

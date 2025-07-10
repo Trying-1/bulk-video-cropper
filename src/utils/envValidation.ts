@@ -22,16 +22,6 @@ const CORE_REQUIRED_ENV_VARS = [
 ];
 
 /**
- * Required environment variables for payment functionality
- * Only checked if payment features are enabled
- */
-const PAYMENT_REQUIRED_ENV_VARS = [
-  'STRIPE_SECRET_KEY',
-  'NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY',
-  'STRIPE_WEBHOOK_SECRET'
-];
-
-/**
  * Validates that all required environment variables are present
  * @returns Validation result with status and list of missing variables
  */
@@ -42,15 +32,6 @@ export function validateEnvironment(): ValidationResult {
   for (const envVar of CORE_REQUIRED_ENV_VARS) {
     if (!process.env[envVar]) {
       missingVars.push(envVar);
-    }
-  }
-  
-  // Check payment environment variables only if payments are enabled
-  if (isFeatureEnabled('ENABLE_PAYMENTS')) {
-    for (const envVar of PAYMENT_REQUIRED_ENV_VARS) {
-      if (!process.env[envVar]) {
-        missingVars.push(envVar);
-      }
     }
   }
   

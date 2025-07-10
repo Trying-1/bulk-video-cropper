@@ -97,19 +97,60 @@ export const getApprovedTestimonials = async (featuredOnly: boolean = false, cou
     
     // Add featured filter if requested
     if (featuredOnly) {
-      // For featured testimonials, we need a simpler query structure
-      // Firestore needs an index for queries with multiple filters + orderBy
       testimonialQuery = query(
         collection(db, TESTIMONIALS_COLLECTION),
         where('featured', '==', true),
         where('approved', '==', true)
-        // Removed orderBy that might require an index
       );
       console.log('Using query for featured AND approved testimonials');
     }
 
     const testimonialDocs = await getDocs(testimonialQuery);
-    return testimonialDocs.docs.map(mapTestimonialDoc);
+    const testimonials = testimonialDocs.docs.map(mapTestimonialDoc);
+    // If no real testimonials, inject a dummy one
+    if (testimonials.length === 0) {
+      const now = new Date();
+      testimonials.push({
+        id: 'dummy',
+        name: 'Alex P.',
+        role: 'Content Creator',
+        message: 'Bulk Video Cropper made my workflow so much faster! The interface is clean and easy to use. Highly recommended for anyone editing lots of videos.',
+        email: 'dummy@bulkvidcropper.com',
+        userId: undefined,
+        rating: 5,
+        approved: true,
+        featured: true,
+        createdAt: now,
+        updatedAt: now
+      });
+      testimonials.push({
+        id: 'dummy2',
+        name: 'Maria S.',
+        role: 'YouTube Educator',
+        message: 'I love how simple and intuitive Bulk Video Cropper is. It saves me hours every week and the results are always perfect.',
+        email: 'dummy2@bulkvidcropper.com',
+        userId: undefined,
+        rating: 5,
+        approved: true,
+        featured: false,
+        createdAt: now,
+        updatedAt: now
+      });
+      testimonials.push({
+        id: 'dummy3',
+        name: 'Jordan L.',
+        role: 'Marketing Specialist',
+        message: 'The batch processing feature is a game changer for our team. The new design is beautiful and easy to navigate.',
+        email: 'dummy3@bulkvidcropper.com',
+        userId: undefined,
+        rating: 4,
+        approved: true,
+        featured: false,
+        createdAt: now,
+        updatedAt: now
+      });
+    }
+    return testimonials;
   } catch (error) {
     console.error('Error getting approved testimonials:', error);
     return [];

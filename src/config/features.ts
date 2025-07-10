@@ -27,6 +27,19 @@ export const FEATURES = {
   
   // === Authentication Features ===
   ENABLE_GOOGLE_AUTH: false, // Google authentication disabled until secure implementation
+  
+  // === Footer Link Features ===
+  SHOW_CONTACT_LINK: false,
+  SHOW_ABOUT_LINK: false,
+  SHOW_COOKIE_POLICY_LINK: false,
+  SHOW_PRIVACY_POLICY_LINK: false,
+  SHOW_TERMS_OF_SERVICE_LINK: false,
+  SHOW_FOOTER: false,
+
+  // === User System Features ===
+  ENABLE_USER_SYSTEM: false, // Toggle the entire user system (auth, profile, etc.)
+  ENABLE_AUTH: false,        // Toggle authentication (sign in/up, protected routes)
+  ENABLE_PROFILE: false,     // Toggle user profile page and related features
 };
 
 /**

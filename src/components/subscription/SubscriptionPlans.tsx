@@ -54,7 +54,6 @@ export default function SubscriptionPlans() {
   }, []);
 
   const handleUpgrade = async (plan: SubscriptionPlan) => {
-    // Here you would integrate with your payment processor
     // For now, we'll just show an alert
     alert(`Upgrade to ${plan.name} plan`);
   };

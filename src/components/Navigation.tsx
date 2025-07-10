@@ -17,6 +17,7 @@ function Navigation() {
   // Feature flags
   const paymentsEnabled = isFeatureEnabled('ENABLE_PAYMENTS');
   const userFlowEnabled = isFeatureEnabled('ENABLE_USER_FLOW_PAGE');
+  const showProfile = isFeatureEnabled('ENABLE_USER_SYSTEM') && isFeatureEnabled('ENABLE_PROFILE');
 
   // Memoize the active path checking function to avoid unnecessary calculations
   const isActive = useMemo(() => {
@@ -92,6 +93,7 @@ function Navigation() {
               )}
               
               {/* App navigation links */}
+              {showProfile && (
               <Link
                 href="/profile"
                 className={`inline-flex items-center px-1 pt-1 border-b-2 ${
@@ -102,6 +104,7 @@ function Navigation() {
               >
                 Profile
               </Link>
+              )}
               <Link
                 href="/editor"
                 className={`inline-flex items-center px-1 pt-1 border-b-2 ${
@@ -134,6 +137,7 @@ function Navigation() {
                 <div className="flex items-center space-x-4">
 
 
+                  {showProfile && user && (
                   <Link
                     href="/profile"
                     className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-white flex items-center gap-1"
@@ -150,16 +154,19 @@ function Navigation() {
                     </svg>
                     <span className="sr-only">Profile</span>
                   </Link>
+                  )}
                 </div>
               </div>
             ) : (
               <div className="ml-3 relative flex items-center">
+                {!user && isFeatureEnabled('ENABLE_USER_SYSTEM') && isFeatureEnabled('ENABLE_AUTH') && (
                 <Link
                   href="/auth"
                   className="bg-teal-500 text-white px-4 py-2 rounded-md hover:bg-teal-600 whitespace-nowrap flex-shrink-0 inline-flex items-center justify-center"
                 >
                   Sign In
                 </Link>
+                )}
               </div>
             )}
           </div>
@@ -199,6 +206,7 @@ function Navigation() {
             )}
             
             {/* App navigation links */}
+            {showProfile && (
             <Link
               href="/profile"
               className={`block py-2 px-3 rounded-md ${isActive('/profile') ? 'bg-teal-50 dark:bg-teal-900 text-teal-700 dark:text-teal-300' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
@@ -206,6 +214,7 @@ function Navigation() {
             >
               Profile
             </Link>
+            )}
             <Link
               href="/editor"
               className={`block py-2 px-3 rounded-md ${isActive('/editor') ? 'bg-teal-50 dark:bg-teal-900 text-teal-700 dark:text-teal-300' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
@@ -222,7 +231,7 @@ function Navigation() {
                 User Flow
               </Link>
             )}
-            {!user && (
+            {!user && isFeatureEnabled('ENABLE_USER_SYSTEM') && isFeatureEnabled('ENABLE_AUTH') && (
               <Link
                 href="/auth"
                 className="block py-2 px-3 rounded-md bg-teal-500 text-white hover:bg-teal-600 mt-4"

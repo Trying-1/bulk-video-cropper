@@ -249,7 +249,7 @@ export const cropVideo = async (
       '-vf', `crop=${cropParams.width}:${cropParams.height}:${cropParams.x}:${cropParams.y}`,
       '-c:v', 'libx264', 
       '-preset', 'ultrafast',  // Fast processing on all devices
-      '-crf', '28',           // Reasonable compression that preserves quality
+      '-crf', '32',           // Lower quality for faster processing
       '-c:a', 'copy',         // Just copy audio (most reliable)
       '-movflags', '+faststart', // Help with streaming playback
       outputFileName

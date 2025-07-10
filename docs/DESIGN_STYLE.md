@@ -1,5 +1,7 @@
 # Design Style Documentation
 
+> **Update (2025):** Neumorphic/soft UI is now the primary style, with glassmorphism and blob design as accents. The Poppins font is used throughout, with a centralized color system. The footer and its links are feature-flagged and may be hidden. The cookie consent banner is minimal and modern.
+
 ## Overview
 This application utilizes a modern design style that combines several contemporary UI trends to create a clean, approachable, and professional interface.
 

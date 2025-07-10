@@ -89,6 +89,12 @@ Converting the desktop Bulk Video Cropper application into a professional, monet
 - Marketing approach for initial launch
 
 ## Recent Updates
+- **May 24, 2025**: UI/UX simplification and design updates:
+  - Removed dark mode, stats, plan badges, upgrade prompts, feedback/support cards, and session/credits usage stats from the UI
+  - Footer and its links are now feature-flagged and may be hidden
+  - Landing page updated to neumorphic, modern style with Poppins font and centralized color system
+  - Cookie consent banner is now minimal, with a small, pill-shaped Accept button
+  - Animated dotted arrows added to the 'How Bulk Video Cropper Works' section
 - **May 23, 2025**: Enhanced authentication and UI consistency:
   - Implemented email verification flow for new and existing users
   - Created dedicated email verification page

@@ -429,3 +429,11 @@ The development process should be iterative, starting with a solid MVP and expan
 3. Develop technical specifications
 4. Assemble development team
 5. Begin Phase 1 implementation
+
+## Recent UI/UX Simplifications (2025)
+- Dark mode, recent activity, preferences, plan badges, upgrade prompts, and usage stats have been removed from the UI for a cleaner experience.
+- The profile and editor pages now only show essential information.
+- The footer and its links (Contact Us, About Us, Cookie Policy, Privacy Policy, Terms of Service) are now controlled by feature flags and may be hidden.
+- The landing page uses a neumorphic, modern design with custom shadows, Poppins font, and a centralized color system.
+- The cookie consent banner is minimal, with a small, pill-shaped Accept button.
+- The 'How Bulk Video Cropper Works' section uses animated dotted arrows for visual flow.

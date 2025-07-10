@@ -1,5 +1,7 @@
 # Bulk Video Cropper Documentation
 
+> **Note:** The UI/UX is now highly simplified. Many features (such as stats, plan badges, upgrade prompts, and even the footer or its links) are hidden or toggled via a feature flag system. The design uses a neumorphic, modern style with the Poppins font and a centralized color system for visual hierarchy.
+
 This directory contains documentation for the Bulk Video Cropper application. Each document provides detailed information about specific aspects of the application. The documentation is regularly updated to reflect recent implementations and improvements to the application.
 
 ## Core Documentation

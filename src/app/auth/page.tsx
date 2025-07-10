@@ -6,8 +6,13 @@ import AuthLayout from '@/components/auth/AuthLayout';
 import { getUserSessionCookie } from '@/utils/cookies';
 import { useAuth } from '@/contexts/AuthContext';
 import SearchParamsWrapper from '@/components/SearchParamsWrapper';
+import { FEATURES } from '@/config/features';
 
-export default function AuthPage() {
+function AuthDisabled() {
+  return <div className="p-8 text-center text-gray-500">Authentication is currently disabled.</div>;
+}
+
+function AuthPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const [checking, setChecking] = useState(true);
@@ -60,3 +65,5 @@ export default function AuthPage() {
     </SearchParamsWrapper>
   );
 }
+
+export default FEATURES.ENABLE_AUTH && FEATURES.ENABLE_USER_SYSTEM ? AuthPage : AuthDisabled;

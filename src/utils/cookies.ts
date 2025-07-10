@@ -37,12 +37,7 @@ export interface AppState {
   onboardingDismissedAt?: string; // Timestamp when onboarding was dismissed
   quickStartShown?: boolean; // Whether the quick start guide was shown
   lastInteraction?: string; // Timestamp of last user interaction
-  paymentPageVisited?: string; // Timestamp when payment page was visited
   lastLogin?: string; // Timestamp of the user's last login
-  lastPaymentAttempt?: { // Details of the last payment attempt
-    plan: string;
-    timestamp: string;
-  };
   
   // Enhanced workflow tracking
   workflowStage?: string; // Current stage in the user workflow

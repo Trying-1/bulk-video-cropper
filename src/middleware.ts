@@ -4,9 +4,6 @@ import { apiRateLimitMiddleware } from './middleware/apiRateLimit';
 
 // List of payment and subscription related paths to block
 const BLOCKED_PATHS = [
-  '/payment',
-  '/payment-methods',
-  '/payment-success',
   '/subscription',
   '/plans',
   '/pricing',

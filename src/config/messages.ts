@@ -17,14 +17,6 @@ export const ERROR_MESSAGES = {
     EMAIL_ALREADY_IN_USE: 'This email is already in use. Please use a different email or sign in.',
   },
 
-  // Payment errors
-  PAYMENT: {
-    INITIALIZATION_FAILED: 'Failed to initialize payment. Please try again.',
-    PROCESSING_FAILED: 'An error occurred during payment processing. Please try again.',
-    CARD_DECLINED: 'Your card was declined. Please try another payment method.',
-    GENERAL: 'An error occurred with your payment. Please try again later.',
-  },
-
   // Video processing errors
   VIDEO: {
     PROCESSING_FAILED: 'Failed to process video. Please try again.',
@@ -57,11 +49,6 @@ export const SUCCESS_MESSAGES = {
     SIGN_IN_SUCCESS: 'Signed in successfully!',
     PASSWORD_RESET_SENT: 'Password reset email sent. Please check your inbox.',
     PASSWORD_UPDATED: 'Password updated successfully.',
-  },
-  
-  PAYMENT: {
-    SUBSCRIPTION_SUCCESS: 'Subscription successful! Thank you for your purchase.',
-    PAYMENT_RECEIVED: 'Payment received. Thank you!',
   },
   
   VIDEO: {
