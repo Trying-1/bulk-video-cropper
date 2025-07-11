@@ -77,6 +77,25 @@ export default function RootLayout({
             <CookieConsent />
           </ErrorBoundary>
         </Providers>
+        
+        {/* MoneyTag Service Worker Registration */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function() {
+                  navigator.serviceWorker.register('/monetag-sw.js')
+                    .then(function(registration) {
+                      console.log('MoneyTag SW registered: ', registration);
+                    })
+                    .catch(function(registrationError) {
+                      console.log('MoneyTag SW registration failed: ', registrationError);
+                    });
+                });
+              }
+            `,
+          }}
+        />
       </body>
     </html>
   )
